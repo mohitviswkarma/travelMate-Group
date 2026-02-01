@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket Chat Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .user {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    button {
+      margin-right: 10px;
+    }
+    textarea {
+      width: 100%;
+      height: 60px;
+    }
+    .log {
+      background: #000;
+      color: #0f0;
+      padding: 10px;
+      height: 150px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>🧪 WebSocket Chat Test</h2>
+
+<!-- ================= USER A ================= -->
+<div class="user">
+  <h3>User A</h3>
+
+  <button onclick="connectA()">Connect</button>
+  <button onclick="sendFromA()">Send to B</button>
+
+  <textarea id="msgA">Hello from User A 🚀</textarea>
+
+  <div class="log" id="logA"></div>
+</div>
+
+<!-- ================= USER B ================= -->
+<div class="user">
+  <h3>User B</h3>
+
+  <button onclick="connectB()">Connect</button>
+  <button onclick="sendFromB()">Send to A</button>
+
+  <textarea id="msgB">Hello from User B 👋</textarea>
+
+  <div class="log" id="logB"></div>
+</div>
+
+<script>
+  // 🔐 HARD-CODED USERS (REPLACE WITH YOUR VALUES)
+
+  const USER_A = {
+    userId: "5260fb11-788e-41ee-bed0-5c81940e5e11",
+    token:  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ2aXNoZXNoZ293ZGExNUBnbWFpbC5jb20iLCJ1c2VySWQiOiI1MjYwZmIxMS03ODhlLTQxZWUtYmVkMC01YzgxOTQwZTVlMTEiLCJpYXQiOjE3Njk2NjU4NzEsImV4cCI6MTc2OTc1MjI3MX0.RagjviCMuVSFeRNX62pZSfL4rz4VZoOI1nxPmKjmkxI"
+  };
+
+  const USER_B = {
+    userId: "981c6c9b-0c46-4560-a545-4429f82fe9d8",
+    token:  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ2aXNoZXNoLmlzMjJAYm1zY2UuYWMuaW4iLCJ1c2VySWQiOiI5ODFjNmM5Yi0wYzQ2LTQ1NjAtYTU0NS00NDI5ZjgyZmU5ZDgiLCJpYXQiOjE3Njk2ODQ2MzIsImV4cCI6MTc2OTc3MTAzMn0.CjbrfZosM9vCD_c6YixyblzmJWfhF-IwZzFEZuCZdpY"
+  };
+
+  let wsA = null;
+  let wsB = null;
+
+  function log(el, msg) {
+    el.innerHTML += msg + "<br/>";
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ================= CONNECT =================
+
+  function connectA() {
+    wsA = new WebSocket(
+      `ws://localhost:8085/ws/chat?token=${USER_A.token}`
+    );
+
+    wsA.onopen = () =>
+      log(logA, "✅ Connected");
+
+    wsA.onmessage = e =>
+      log(logA, "📩 " + e.data);
+
+    wsA.onclose = () =>
+      log(logA, "❌ Disconnected");
+  }
+
+  function connectB() {
+    wsB = new WebSocket(
+      `ws://localhost:8085/ws/chat?token=${USER_B.token}`
+    );
+
+    wsB.onopen = () =>
+      log(logB, "✅ Connected");
+
+    wsB.onmessage = e =>
+      log(logB, "📩 " + e.data);
+
+    wsB.onclose = () =>
+      log(logB, "❌ Disconnected");
+  }
+
+  // ================= SEND =================
+
+  function sendFromA() {
+    wsA.send(JSON.stringify({
+      to: USER_B.userId,
+      message: document.getElementById("msgA").value
+    }));
+    log(logA, "📤 Sent to B");
+  }
+
+  function sendFromB() {
+    wsB.send(JSON.stringify({
+      to: USER_A.userId,
+      message: document.getElementById("msgB").value
+    }));
+    log(logB, "📤 Sent to A");
+  }
+</script>
+
+</body>
+</html>

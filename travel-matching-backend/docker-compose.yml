@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: travelmate-db
+    environment:
+      POSTGRES_DB: travelmate
+      POSTGRES_USER: travelmate
+      POSTGRES_PASSWORD: travelmate
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travelmate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: travelmate-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8085:8085" # Host:Container
+    environment:
+      # Pass PORT to Java so EmbeddedTomcatServer picks it up
+      PORT: 8080 
+      # Connect to the postgres service defined above
+      DB_URL: jdbc:postgresql://postgres:5432/travelmate
+      DB_USERNAME: travelmate
+      DB_PASSWORD: travelmate
+      JWT_SECRET: super-secret-key
+    restart: unless-stopped
+
+volumes:
+  pg_data:

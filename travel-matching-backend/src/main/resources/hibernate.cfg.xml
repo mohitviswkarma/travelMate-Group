@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <!-- ========== DATABASE CONNECTION ========== -->
+        <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
+        <property name="hibernate.connection.url">jdbc:postgresql://ep-proud-silence-ahcll1w8-pooler.c-3.us-east-1.aws.neon.tech:5432/neondb?sslmode=require&amp;prepareThreshold=0&amp;preparedStatementCacheQueries=0</property>
+        <property name="hibernate.connection.username">neondb_owner</property>
+        <property name="hibernate.connection.password">npg_FUhpvMtRYT04</property>
+
+        <!-- ========== HIBERNATE SETTINGS ========== -->
+        <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
+        <property name="hibernate.show_sql">true</property>
+        <property name="hibernate.format_sql">true</property>
+        <property name="hibernate.hbm2ddl.auto">update</property>
+
+        <!-- ========== C3P0 CONNECTION POOL ========== -->
+        <property name="hibernate.connection.provider_class">org.hibernate.connection.C3P0ConnectionProvider</property>
+        <property name="hibernate.c3p0.min_size">3</property>
+        <property name="hibernate.c3p0.max_size">10</property>
+        <property name="hibernate.c3p0.timeout">1800</property>
+        <property name="hibernate.c3p0.max_statements">50</property>
+        <property name="hibernate.c3p0.idle_test_period">300</property>
+        <property name="hibernate.c3p0.acquire_increment">1</property>
+        <property name="hibernate.c3p0.testConnectionOnCheckout">true</property>
+        <property name="hibernate.c3p0.preferredTestQuery">SELECT 1</property>
+        <property name="hibernate.c3p0.validate">true</property>
+        
+        <!-- ========== NEON SPECIFIC SETTINGS ========== -->
+        <!-- Keep connections alive for Neon's serverless architecture -->
+        <property name="hibernate.c3p0.unreturnedConnectionTimeout">30</property>
+        <property name="hibernate.c3p0.debugUnreturnedConnectionStackTraces">true</property>
+        
+        <!-- ========== ENTITY MAPPINGS ========== -->
+        <mapping class="com.travelmate.entity.User"/>
+        <mapping class="com.travelmate.entity.UserProfile"/>
+        <mapping class="com.travelmate.entity.Message"/>
+    </session-factory>
+</hibernate-configuration>
