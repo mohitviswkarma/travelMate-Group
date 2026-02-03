@@ -75,6 +75,18 @@
     <url-pattern>/api/chat/*</url-pattern>
   </servlet-mapping>
 
+  <!-- ================= GROUP ================= -->
+
+<servlet>
+    <servlet-name>GroupServlet</servlet-name>
+    <servlet-class>com.travelmate.controller.group.GroupServlet</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>GroupServlet</servlet-name>
+    <url-pattern>/api/group/*</url-pattern>
+  </servlet-mapping>
+
   <!-- ================= SESSION ================= -->
   <session-config>
     <session-timeout>30</session-timeout>
@@ -82,5 +94,9 @@
       <http-only>true</http-only>
     </cookie-config>
   </session-config>
+
+
+
+
 
 </web-app>

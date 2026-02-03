@@ -47,8 +47,13 @@ public class Application {
                                 dependencies.getMatchingServlet());
                                 
         server.matchingFilter("JwtFilter", "/api/matches/*", new JwtFilter());
-                            
-                            
+                 
+        server.matchingFilter("JwtFilter", "/api/group/*", new JwtFilter());
+           
+        server.registerServlet("GroupServlet", 
+        "/api/group/*", 
+        dependencies.getGroupServlet());    
+
         server.start();
     }
 }

@@ -4,53 +4,68 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class GsonConfig {
 
-    private static final Gson GSON_INSTANCE;
+    private static final Gson gson = createGson();
 
-    static {
-        GSON_INSTANCE = new GsonBuilder()
-                .serializeNulls()
+    public static Gson getGson() {
+        return gson;
+    }
+
+    private static Gson createGson() {
+        return new GsonBuilder()
+                .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
                 .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
                 .setPrettyPrinting()
                 .create();
     }
 
-    /**
-     * Get the configured Gson instance
-     */
-    public static Gson getGson() {
-        return GSON_INSTANCE;
+    // Adapter for LocalDate (yyyy-MM-dd)
+    private static class LocalDateAdapter extends TypeAdapter<LocalDate> {
+        @Override
+        public void write(JsonWriter out, LocalDate value) throws IOException {
+            if (value == null) {
+                out.nullValue();
+            } else {
+                out.value(value.toString()); // Writes "2026-06-10"
+            }
+        }
+
+        @Override
+        public LocalDate read(JsonReader in) throws IOException {
+            if (in.peek() == JsonToken.NULL) {
+                in.nextNull();
+                return null;
+            }
+            return LocalDate.parse(in.nextString()); // Parses "2026-06-10"
+        }
     }
 
-    /**
-     * Custom TypeAdapter for LocalDateTime
-     */
+    // Adapter for LocalDateTime (ISO-8601)
     private static class LocalDateTimeAdapter extends TypeAdapter<LocalDateTime> {
-        private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
         @Override
         public void write(JsonWriter out, LocalDateTime value) throws IOException {
             if (value == null) {
                 out.nullValue();
             } else {
-                out.value(value.format(FORMATTER));
+                out.value(value.toString());
             }
         }
 
         @Override
         public LocalDateTime read(JsonReader in) throws IOException {
-            if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
+            if (in.peek() == JsonToken.NULL) {
                 in.nextNull();
                 return null;
             }
-            return LocalDateTime.parse(in.nextString(), FORMATTER);
+            return LocalDateTime.parse(in.nextString());
         }
     }
 }
