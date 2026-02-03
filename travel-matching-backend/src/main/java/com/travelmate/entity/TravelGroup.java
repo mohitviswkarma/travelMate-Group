@@ -78,6 +78,9 @@ public class TravelGroup {
     @Column(name = "group_interest")
     private List<String> groupInterest;
 
+    public TravelGroup() {
+    }
+
     public Long getGroupId() {
         return id;
     }
