@@ -2,6 +2,8 @@ package com.travelmate.controller.group;
 
 import java.io.IOException;
 
+import com.travelmate.controller.matching.MatchingController;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +16,11 @@ POST   /groups/{groupId}/join      → join group
 
 public class GroupServlet extends HttpServlet {
 
+        private final GroupController groupController;
+
+    public GroupServlet(GroupController groupController) {
+        this.groupController = groupController;
+    }
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String path = req.getPathInfo();
@@ -29,11 +36,11 @@ public class GroupServlet extends HttpServlet {
         switch (path) {
             case "/create":
                 // Endpoint: POST /api/group/create
-                GroupController.createGroup(req, resp);
+                groupController.createGroup(req, resp);
                 break;
                 case "/groupId/join":
                 // Endpoint: POST /api/group/join
-                GroupController.joinGroup(req, resp);
+                groupController.joinGroup(req, resp);
                 break;
             default:
                 resp.sendError(HttpServletResponse.SC_NOT_FOUND);

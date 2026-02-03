@@ -14,7 +14,7 @@
         <!-- Register entities -->
         <class>com.travelmate.entity.User</class>
         <class>com.travelmate.entity.UserProfile</class>
-
+        <class>com.travelmate.entity.TravelGroup</class>
         <properties>
             <!-- Database -->
             <property name="jakarta.persistence.jdbc.driver"

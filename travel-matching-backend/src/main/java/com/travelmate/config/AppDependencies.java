@@ -5,8 +5,10 @@ import com.google.gson.Gson;
 // Auth
 import com.travelmate.controller.auth.AuthController;
 import com.travelmate.controller.auth.AuthServlet;
+import com.travelmate.controller.group.GroupController;
+import com.travelmate.controller.group.GroupServlet;
 import com.travelmate.service.auth.AuthService;
-
+import com.travelmate.service.group.GroupService;
 // Profile
 import com.travelmate.controller.profile.UserProfileController;
 import com.travelmate.controller.profile.UserProfileServlet;
@@ -18,6 +20,8 @@ import com.travelmate.repository.user.UserRepository;
 import com.travelmate.repository.user.UserRepositoryImpl;
 import com.travelmate.repository.userProfile.UserProfileRepository;
 import com.travelmate.repository.userProfile.UserProfileRepositoryImpl;
+import com.travelmate.repository.group.GroupRepository;
+import com.travelmate.repository.group.GroupRepositoryImpl;
 import com.travelmate.repository.matching.MatchConnectionRepository;
 import com.travelmate.repository.matching.MatchConnectionRepositoryImpl;
 // Matching
@@ -40,6 +44,7 @@ public class AppDependencies {
     private final AuthServlet authServlet;
     private final UserProfileServlet userProfileServlet;
     private final MatchingServlet matchingServlet; 
+    private final GroupServlet groupServlet;
 
     public AppDependencies() {
 
@@ -58,6 +63,7 @@ public class AppDependencies {
         TripRequestRepository tripRequestRepository = new TripRequestRepositoryImpl(entityManager);
         MatchConnectionRepository matchConnectionRepository = new MatchConnectionRepositoryImpl(entityManager);
         otprepo otpRepository = new otprepo(entityManager);
+        GroupRepository groupRepository = new GroupRepositoryImpl(entityManager);
 
         /* =========================
            SERVICES
@@ -83,7 +89,7 @@ public class AppDependencies {
         new otpService(otpRepository, new com.travelmate.service.email.EmailService());
 
 
-
+        GroupService groupService = new GroupService(groupRepository, userRepository);
 
         
 
@@ -94,7 +100,7 @@ public class AppDependencies {
         UserProfileController userProfileController = new UserProfileController(userProfileService);
         MatchingController matchingController = new MatchingController(matchingService, gson);
 
-
+        GroupController groupController = new GroupController(groupService,gson);
 
         /* =========================
            SERVLETS
@@ -102,6 +108,7 @@ public class AppDependencies {
         this.authServlet = new AuthServlet(authController);
         this.userProfileServlet = new UserProfileServlet(userProfileController);
         this.matchingServlet = new MatchingServlet(matchingController);
+        this.groupServlet = new GroupServlet(groupController);
     }
 
 
@@ -115,5 +122,9 @@ public class AppDependencies {
     
     public MatchingServlet getMatchingServlet() {
         return matchingServlet;
+    }
+
+    public GroupServlet getGroupServlet() {
+        return groupServlet;
     }
 }
