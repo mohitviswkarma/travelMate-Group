@@ -4,6 +4,7 @@ import com.travelmate.dto.GroupCreateDto;
 import com.travelmate.dto.GroupResponseDto;
 import com.travelmate.dto.SendJoinRequestDTO;
 import com.travelmate.dto.JoinRequestResponseDTO;
+import com.travelmate.dto.RespondToJoinRequestDTO;
 import com.travelmate.entity.GroupJoinRequest;
 import com.travelmate.entity.TravelGroup;
 import com.travelmate.entity.User;
@@ -13,6 +14,7 @@ import com.travelmate.repository.group.GroupRepository;
 import com.travelmate.repository.user.UserRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +60,7 @@ public class GroupService {
         group.setBudgetMin(requestDto.getBudgetMin());
         group.setBudgetMax(requestDto.getBudgetMax());
         
-        // Set group interests (note: your DTO uses 'interests', entity uses 'groupInterest')
+        // Set group interests
         if (requestDto.getInterests() != null && !requestDto.getInterests().isEmpty()) {
             group.setGroupInterest(new ArrayList<>(requestDto.getInterests()));
         } else {
@@ -140,6 +142,107 @@ public class GroupService {
     }
 
     /**
+     * NEW METHOD: Accept or reject a join request
+     */
+    public JoinRequestResponseDTO respondToJoinRequest(UUID adminUserId, RespondToJoinRequestDTO requestDTO) {
+        // 1. Validate action
+        if (requestDTO.getAction() == null || 
+            (!requestDTO.getAction().equalsIgnoreCase("ACCEPT") && 
+             !requestDTO.getAction().equalsIgnoreCase("REJECT"))) {
+            throw new IllegalArgumentException("Action must be either 'ACCEPT' or 'REJECT'");
+        }
+
+        // 2. Parse requestId
+        UUID requestId;
+        try {
+            requestId = UUID.fromString(requestDTO.getRequestId());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid request ID format");
+        }
+
+        // 3. Find the join request
+        Optional<GroupJoinRequest> requestOpt = joinRequestRepository.findById(requestId);
+        if (requestOpt.isEmpty()) {
+            throw new IllegalArgumentException("Join request not found");
+        }
+        GroupJoinRequest joinRequest = requestOpt.get();
+
+        // 4. Check if request is still pending
+        if (joinRequest.getStatus() != JoinRequestStatus.PENDING) {
+            throw new IllegalStateException("This request has already been " + 
+                joinRequest.getStatus().name().toLowerCase());
+        }
+
+        // 5. Verify that the current user is the admin of the group
+        TravelGroup group = joinRequest.getGroup();
+        if (!group.getAdmin().getId().equals(adminUserId)) {
+            throw new IllegalStateException("Only the group admin can respond to join requests");
+        }
+
+        // 6. Get the admin user for respondedBy field
+        Optional<User> adminOpt = userRepository.findById(adminUserId);
+        if (adminOpt.isEmpty()) {
+            throw new IllegalArgumentException("Admin user not found");
+        }
+        User admin = adminOpt.get();
+
+        // 7. Process the action
+        if (requestDTO.getAction().equalsIgnoreCase("ACCEPT")) {
+            // Check if group is full
+            if (group.getMaxSize() != null && group.getMembers().size() >= group.getMaxSize()) {
+                throw new IllegalStateException("Group is already full");
+            }
+
+            // Add user to group members
+            User userToAdd = joinRequest.getUser();
+            if (!group.getMembers().contains(userToAdd)) {
+                group.getMembers().add(userToAdd);
+                groupRepository.save(group);
+            }
+
+            // Update request status
+            joinRequest.setStatus(JoinRequestStatus.ACCEPTED);
+        } else {
+            // REJECT
+            joinRequest.setStatus(JoinRequestStatus.REJECTED);
+        }
+
+        // 8. Update request metadata
+        joinRequest.setRespondedAt(LocalDateTime.now());
+        joinRequest.setRespondedBy(admin);
+
+        // 9. Save updated request
+        GroupJoinRequest updatedRequest = joinRequestRepository.update(joinRequest);
+
+        // 10. Convert to DTO and return
+        return convertJoinRequestToDTO(updatedRequest);
+    }
+
+    /**
+     * NEW METHOD: Get all pending join requests for a group (admin only)
+     */
+    public List<JoinRequestResponseDTO> getPendingRequests(UUID adminUserId, UUID groupId) {
+        // 1. Check if group exists
+        TravelGroup group = groupRepository.findById(groupId);
+        if (group == null) {
+            throw new IllegalArgumentException("Group not found");
+        }
+
+        // 2. Verify that the current user is the admin
+        if (!group.getAdmin().getId().equals(adminUserId)) {
+            throw new IllegalStateException("Only the group admin can view join requests");
+        }
+
+        // 3. Get all pending requests for this group
+        List<GroupJoinRequest> pendingRequests = joinRequestRepository.findPendingRequestsByGroupId(groupId);
+
+        // 4. Convert to DTOs
+        return pendingRequests.stream()
+            .map(this::convertJoinRequestToDTO)
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
      * Validate GroupCreateDto
      */
     private void validateGroupCreateDto(GroupCreateDto dto) {
@@ -159,23 +262,10 @@ public class GroupService {
             throw new IllegalArgumentException("Start date must be before end date");
         }
 
-        // FIXED: More lenient date validation - allow dates from yesterday onwards
-        // This helps with timezone issues and allows some flexibility
+        // Allow dates from yesterday onwards (helps with timezone issues)
         LocalDate yesterday = LocalDate.now().minusDays(1);
         if (dto.getStartDate().isBefore(yesterday)) {
-            // Debug logging
-            System.err.println("=== DATE VALIDATION DEBUG ===");
-            System.err.println("Server date (now): " + LocalDate.now());
-            System.err.println("Yesterday: " + yesterday);
-            System.err.println("Requested start date: " + dto.getStartDate());
-            System.err.println("Is before yesterday? " + dto.getStartDate().isBefore(yesterday));
-            System.err.println("============================");
-            
-            throw new IllegalArgumentException(
-                "Start date cannot be more than 1 day in the past. " +
-                "Server date: " + LocalDate.now() + 
-                ", Requested date: " + dto.getStartDate()
-            );
+            throw new IllegalArgumentException("Start date cannot be in the past");
         }
 
         if (dto.getBudgetMin() == null || dto.getBudgetMin() < 0) {
@@ -197,18 +287,17 @@ public class GroupService {
 
     /**
      * Convert GroupJoinRequest entity to JoinRequestResponseDTO
-     * Note: Your DTO uses String IDs, not UUID
      */
     private JoinRequestResponseDTO convertJoinRequestToDTO(GroupJoinRequest request) {
         JoinRequestResponseDTO dto = new JoinRequestResponseDTO();
         
-        // Convert UUIDs to Strings as per your DTO definition
+        // Convert UUIDs to Strings
         dto.setRequestId(request.getId().toString());
         dto.setGroupId(request.getGroup().getId().toString());
         dto.setGroupName(request.getGroup().getGroupName());
         dto.setUserId(request.getUser().getId().toString());
         
-        // Get user name - try getName() first (as per your User entity)
+        // Get user name
         String userName = request.getUser().getName();
         if (userName == null && request.getUser().getUserProfile() != null) {
             userName = request.getUser().getUserProfile().getFullName();

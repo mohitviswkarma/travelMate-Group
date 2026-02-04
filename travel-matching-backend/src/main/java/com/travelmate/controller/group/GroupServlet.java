@@ -8,9 +8,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /*
-POST   /api/group/create              → create group
-POST   /api/group/join-request        → send join request to group (NEW)
-POST   /api/group/{groupId}/join      → join group (existing)
+POST   /api/group/create                      → create group
+POST   /api/group/join-request                → send join request to group
+POST   /api/group/respond-to-request          → accept/reject join request (NEW)
+GET    /api/group/{groupId}/pending-requests  → get pending requests for a group (NEW)
+POST   /api/group/{groupId}/join              → join group directly (if implemented)
 */
 
 public class GroupServlet extends HttpServlet {
@@ -25,7 +27,7 @@ public class GroupServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String path = req.getPathInfo();
 
-        resp.setHeader("Access-Control-Allow-Origin", "*"); // Vite Frontend Port
+        resp.setHeader("Access-Control-Allow-Origin", "*");
         resp.setHeader("Access-Control-Allow-Credentials", "true");
 
         if (path == null || path.equals("/")) {
@@ -35,23 +37,50 @@ public class GroupServlet extends HttpServlet {
         
         switch (path) {
             case "/create":
-                // Endpoint: POST /api/group/create
+                // POST /api/group/create
                 groupController.createGroup(req, resp);
                 break;
                 
             case "/join-request":
-                // NEW Endpoint: POST /api/group/join-request
+                // POST /api/group/join-request
                 groupController.sendJoinRequest(req, resp);
                 break;
                 
-            case "/groupId/join":
-                // Endpoint: POST /api/group/join
-                groupController.joinGroup(req, resp);
+            case "/respond-to-request":
+                // NEW: POST /api/group/respond-to-request
+                groupController.respondToJoinRequest(req, resp);
                 break;
                 
             default:
-                resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+                // Check if it matches pattern /groupId/join
+                if (path.matches("^/[a-fA-F0-9\\-]+/join$")) {
+                    // POST /api/group/{groupId}/join
+                    groupController.joinGroup(req, resp);
+                } else {
+                    resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+                }
                 break;
+        }
+    }
+    
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String path = req.getPathInfo();
+
+        resp.setHeader("Access-Control-Allow-Origin", "*");
+        resp.setHeader("Access-Control-Allow-Credentials", "true");
+
+        if (path == null || path.equals("/")) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        // Check if it matches pattern /groupId/pending-requests
+        if (path.matches("^/[a-fA-F0-9\\-]+/pending-requests$")) {
+            // GET /api/group/{groupId}/pending-requests
+            groupController.getPendingRequests(req, resp);
+        } else {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }
     
