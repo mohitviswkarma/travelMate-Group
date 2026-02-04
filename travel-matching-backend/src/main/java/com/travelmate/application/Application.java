@@ -57,3 +57,6 @@ public class Application {
         server.start();
     }
 }
+
+
+//java -jar target/travel-matching-backend-jar-with-dependencies.jar
