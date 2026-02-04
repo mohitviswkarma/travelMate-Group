@@ -303,4 +303,55 @@ public class GroupService {
 
         return dto;
     }
+
+        /**
+     * Current authenticated user leaves (exits) the group voluntarily
+     */
+    public LeaveGroupResponse leaveGroup(UUID userId, LeaveGroupRequest request) {
+        UUID groupUuid;
+        try {
+            groupUuid = UUID.fromString(request.getGroupId());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid group ID format");
+        }
+
+        TravelGroup group = groupRepository.findById(groupUuid);
+        if (group == null) {
+            throw new IllegalArgumentException("Group not found");
+        }
+
+        // Check if user is actually a member
+        boolean isMember = group.getMembers().stream()
+                .anyMatch(u -> u.getId().equals(userId));
+
+        if (!isMember) {
+            throw new IllegalStateException("You are not a member of this group");
+        }
+
+        // Prevent admin from leaving if group has more than 1 member
+        // (you can relax this rule later or implement admin transfer)
+        if (group.getAdmin().getId().equals(userId)) {
+            if (group.getMembers().size() > 1) {
+                throw new IllegalStateException(
+                    "Group admin cannot leave while there are other members. " +
+                    "Transfer admin rights or remove all members first."
+                );
+            }
+            // If only 1 member left (the admin), allow leaving → group becomes empty
+        }
+
+        // Remove user from members
+        group.getMembers().removeIf(u -> u.getId().equals(userId));
+
+        // Save
+        groupRepository.save(group);
+
+        // Optional: clean up any pending join requests (just in case)
+        // joinRequestRepository.deleteByGroupIdAndUserId(groupUuid, userId);
+
+        return new LeaveGroupResponse(
+            groupUuid.toString(),
+            "You have successfully left the group"
+        );
+    }
 }

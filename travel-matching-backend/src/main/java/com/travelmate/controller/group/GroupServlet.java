@@ -43,6 +43,11 @@ public class GroupServlet extends HttpServlet {
             case "/remove-member":
                 groupController.removeMember(req, resp);
                 break;
+            
+                case "/leave":
+                // POST /api/group/leave
+                groupController.leaveGroup(req, resp);
+                break;
 
             default:
                 if (path.matches("^/[a-fA-F0-9\\-]+/join$")) {
