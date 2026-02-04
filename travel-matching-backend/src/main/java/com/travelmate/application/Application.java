@@ -53,7 +53,11 @@ public class Application {
         server.registerServlet("GroupServlet", 
         "/api/group/*", 
         dependencies.getGroupServlet());    
+        
 
         server.start();
     }
 }
+
+
+//java -jar target/travel-matching-backend-jar-with-dependencies.jar
