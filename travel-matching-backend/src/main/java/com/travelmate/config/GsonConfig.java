@@ -24,6 +24,7 @@ public class GsonConfig {
                 .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
                 .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
                 .setPrettyPrinting()
+                .serializeNulls()
                 .create();
     }
 

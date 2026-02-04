@@ -39,8 +39,8 @@ public class AuthService {
         profile.setEmail(savedUser.getEmail());
         profile.setProfileCompleted(false);
 
-        // 3. FIX: Save using the instance variable 'userProfileRepository'
          userProfileRepository.save(profile);
+         savedUser.setUserProfile(profile);
 
         return savedUser;
     }

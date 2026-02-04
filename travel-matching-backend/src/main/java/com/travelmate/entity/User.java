@@ -25,7 +25,9 @@ public class User {
     @GeneratedValue
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
-    
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private UserProfile userProfile;
 
     @Column(name = "email", length = 255, nullable = true)
     private String email;
@@ -147,5 +149,13 @@ public class User {
 
     public void setLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public UserProfile getUserProfile() {
+        return userProfile;
+    }
+
+    public void setUserProfile(UserProfile userProfile) {
+        this.userProfile = userProfile;
     }
 }
