@@ -1,5 +1,6 @@
 package com.travelmate.repository.group;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.travelmate.entity.TravelGroup;
@@ -15,4 +16,6 @@ public interface GroupRepository {
     void addMember(UUID groupId, UUID userId);
 
     void removeMember(UUID groupId, UUID userId);
+
+    List<TravelGroup> findByDestination(String destination);
 }

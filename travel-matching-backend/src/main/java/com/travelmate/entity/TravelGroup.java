@@ -13,7 +13,7 @@ public class TravelGroup {
     @Id
     @GeneratedValue
     @Column(name = "id", nullable = false, updatable = false)
-    private UUID id; // Changed from Long to UUID to match User and standard practice
+    private UUID id; 
 
     @Column(name = "group_name", nullable = false)
     private String groupName;
@@ -21,7 +21,7 @@ public class TravelGroup {
     @Column(name = "description", length = 500)
     private String description;
 
-    // CHANGED: @ManyToOne allows one user to own multiple groups
+    //@ManyToOne allows one user to own multiple groups
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_id", nullable = false)
     private User admin;
@@ -35,7 +35,6 @@ public class TravelGroup {
     )
     private List<User> members = new ArrayList<>();
 
-    // Standard fields
     @Column(name = "max_size")
     private Integer maxSize;
 

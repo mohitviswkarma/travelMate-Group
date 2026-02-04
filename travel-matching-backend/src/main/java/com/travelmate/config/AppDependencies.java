@@ -78,11 +78,12 @@ public class AppDependencies {
 
         GroupJoinRequestRepository groupJoinRequestRepository = new GroupJoinRequestRepositoryImpl(entityManager);
         MatchingService matchingService = new MatchingService(
-                tripRequestRepository, 
-                userProfileRepository, 
-                userRepository,
-                matchConnectionRepository // Added this
-            );
+            tripRequestRepository, 
+            userProfileRepository, 
+            userRepository,
+            matchConnectionRepository,
+            groupRepository // <--- ADD THIS ARGUMENT
+        );
         /* =========================
            JSON (ONE INSTANCE)
            ========================= */
