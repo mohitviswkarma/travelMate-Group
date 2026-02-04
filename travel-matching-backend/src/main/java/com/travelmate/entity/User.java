@@ -25,6 +25,10 @@ public class User {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
     
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private UserProfile userProfile;
+
     @Column(name = "email", length = 255, nullable = true)
     private String email;
 

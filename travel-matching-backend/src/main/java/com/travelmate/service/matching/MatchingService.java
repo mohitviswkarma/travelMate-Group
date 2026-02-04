@@ -48,14 +48,22 @@ this.groupRepository = groupRepository; // Assign it
 }
 
 public List<GroupMatchDto> findMatchingGroups(String destination) {
-        // 1. Fetch groups based on destination
-        List<TravelGroup> groups = groupRepository.findByDestination(destination);
-
-        // 2. Convert to DTOs
-        return groups.stream()
-                .map(GroupMatchDto::new)
-                .collect(Collectors.toList());
+    // Edge Case 1: Null or Empty Input
+    if (destination == null || destination.trim().isEmpty()) {
+        return Collections.emptyList();
     }
+
+    // Edge Case 2: Sanitize input (trim whitespace)
+    String sanitizedDestination = destination.trim();
+
+    // 1. Fetch from Repository (Handles Case-insensitive, Partial, Date, and Capacity)
+    List<TravelGroup> groups = groupRepository.findByDestination(sanitizedDestination);
+
+    // 2. Convert to DTOs
+    return groups.stream()
+            .map(GroupMatchDto::new) // Uses the constructor we defined
+            .collect(Collectors.toList());
+}
 
 public List<UserScore> findMatches(UUID userId, String dest, LocalDate start, LocalDate end, Integer min, Integer max) throws Exception {
     if (dest == null || dest.trim().isEmpty()) {
