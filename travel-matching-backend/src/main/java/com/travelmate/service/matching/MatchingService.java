@@ -1,6 +1,8 @@
 package com.travelmate.service.matching;
 
+import com.travelmate.dto.GroupMatchDto;
 import com.travelmate.entity.MatchConnection;
+import com.travelmate.entity.TravelGroup;
 import com.travelmate.entity.TripRequest;
 import com.travelmate.entity.User;
 import com.travelmate.entity.UserProfile;
@@ -8,6 +10,7 @@ import com.travelmate.entity.enums.FriendRequestStatus;
 import com.travelmate.entity.enums.Gender;
 import com.travelmate.entity.enums.Language;
 import com.travelmate.entity.enums.PreferredCompanionGender;
+import com.travelmate.repository.group.GroupRepository;
 import com.travelmate.repository.matching.MatchConnectionRepository;
 import com.travelmate.repository.trip.TripRequestRepository;
 import com.travelmate.repository.user.UserRepository;
@@ -27,6 +30,7 @@ public class MatchingService {
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
     private final MatchConnectionRepository matchConnectionRepository;
+    private final GroupRepository groupRepository; // NEW Dependency
     // --- ALGORITHM WEIGHTS ---
     private static final double WEIGHT_INTEREST = 0.60; 
     private static final double WEIGHT_PREFS    = 0.40; 
@@ -34,13 +38,24 @@ public class MatchingService {
     public MatchingService(TripRequestRepository tripRequestRepository,
         UserProfileRepository userProfileRepository,
         UserRepository userRepository,
-        MatchConnectionRepository matchConnectionRepository) {
+        MatchConnectionRepository matchConnectionRepository,
+        GroupRepository groupRepository) { // Add this param
 this.tripRequestRepository = tripRequestRepository;
 this.userProfileRepository = userProfileRepository;
 this.userRepository = userRepository;
 this.matchConnectionRepository = matchConnectionRepository;
+this.groupRepository = groupRepository; // Assign it
 }
 
+public List<GroupMatchDto> findMatchingGroups(String destination) {
+        // 1. Fetch groups based on destination
+        List<TravelGroup> groups = groupRepository.findByDestination(destination);
+
+        // 2. Convert to DTOs
+        return groups.stream()
+                .map(GroupMatchDto::new)
+                .collect(Collectors.toList());
+    }
 
 public List<UserScore> findMatches(UUID userId, String dest, LocalDate start, LocalDate end, Integer min, Integer max) throws Exception {
     if (dest == null || dest.trim().isEmpty()) {

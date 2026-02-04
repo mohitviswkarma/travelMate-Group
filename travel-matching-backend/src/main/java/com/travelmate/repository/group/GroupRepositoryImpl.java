@@ -2,6 +2,10 @@ package com.travelmate.repository.group;
 
 import com.travelmate.entity.TravelGroup;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 public class GroupRepositoryImpl implements GroupRepository {
@@ -33,6 +37,22 @@ public class GroupRepositoryImpl implements GroupRepository {
     @Override
     public TravelGroup findById(UUID groupId) {
         return entityManager.find(TravelGroup.class, groupId);
+    }
+
+    @Override
+    public List<TravelGroup> findByDestination(String destination) {
+        if (destination == null || destination.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            String jpql = "SELECT g FROM TravelGroup g WHERE LOWER(g.destination) = :dest";
+            TypedQuery<TravelGroup> query = entityManager.createQuery(jpql, TravelGroup.class);
+            query.setParameter("dest", destination.trim().toLowerCase());
+            return query.getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
     }
 
     @Override

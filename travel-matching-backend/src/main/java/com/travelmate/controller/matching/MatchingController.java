@@ -1,6 +1,7 @@
 package com.travelmate.controller.matching;
 
 import com.google.gson.Gson;
+import com.travelmate.dto.GroupMatchDto;
 import com.travelmate.service.matching.MatchingService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,6 +19,30 @@ public class MatchingController {
     public MatchingController(MatchingService matchingService, Gson gson) {
         this.matchingService = matchingService;
         this.gson = gson;
+    }
+
+    public void findMatchingGroups(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        try {
+            // We reuse the MatchRequestDto because the user enters the same info (Destination, dates, etc.)
+            MatchRequestDto requestDto = gson.fromJson(req.getReader(), MatchRequestDto.class);
+
+            if (requestDto.destination == null || requestDto.destination.isEmpty()) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Destination is required");
+                return;
+            }
+
+            // Call the SEPARATE service method
+            List<GroupMatchDto> groups = matchingService.findMatchingGroups(requestDto.destination);
+
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            resp.getWriter().write(gson.toJson(groups));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write(gson.toJson(new ErrorResponse(e.getMessage())));
+        }
     }
 
     public void findMatches(HttpServletRequest req, HttpServletResponse resp) throws IOException {

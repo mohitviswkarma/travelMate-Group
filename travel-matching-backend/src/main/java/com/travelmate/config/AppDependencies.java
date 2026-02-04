@@ -65,6 +65,9 @@ public class AppDependencies {
         otprepo otpRepository = new otprepo(entityManager);
         GroupRepository groupRepository = new GroupRepositoryImpl(entityManager);
 
+
+
+
         /* =========================
            SERVICES
            ========================= */
@@ -75,11 +78,12 @@ public class AppDependencies {
         AuthService authService = new AuthService(userService, userProfileRepository);
 
         MatchingService matchingService = new MatchingService(
-                tripRequestRepository, 
-                userProfileRepository, 
-                userRepository,
-                matchConnectionRepository // Added this
-            );
+            tripRequestRepository, 
+            userProfileRepository, 
+            userRepository,
+            matchConnectionRepository,
+            groupRepository // <--- ADD THIS ARGUMENT
+        );
         /* =========================
            JSON (ONE INSTANCE)
            ========================= */
