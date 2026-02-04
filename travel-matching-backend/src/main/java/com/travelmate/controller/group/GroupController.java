@@ -1,14 +1,11 @@
 package com.travelmate.controller.group;
 
 import com.google.gson.Gson;
-import com.travelmate.dto.GroupCreateDto;
-import com.travelmate.dto.GroupResponseDto;
-import com.travelmate.dto.SendJoinRequestDTO;
-import com.travelmate.dto.JoinRequestResponseDTO;
-import com.travelmate.dto.RespondToJoinRequestDTO;
+import com.travelmate.dto.*;
 import com.travelmate.service.group.GroupService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -23,22 +20,19 @@ public class GroupController {
         this.gson = gson;
     }
 
-    /**
-     * Create a new group
-     */
     public void createGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             UUID adminUserId = (UUID) req.getAttribute("userId");
-            
+
             if (adminUserId == null) {
-                resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "User context not found.");
+                sendJsonError(resp, HttpServletResponse.SC_UNAUTHORIZED, "User context not found.");
                 return;
             }
 
             GroupCreateDto requestDto = gson.fromJson(req.getReader(), GroupCreateDto.class);
 
             if (requestDto == null) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid request body.");
+                sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid request body.");
                 return;
             }
 
@@ -50,29 +44,26 @@ public class GroupController {
             resp.getWriter().write(gson.toJson(responseDto));
 
         } catch (IllegalArgumentException e) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An error occurred while creating the group.");
+            sendJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An error occurred while creating the group.");
         }
     }
 
-    /**
-     * Send a join request to a group
-     */
     public void sendJoinRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             UUID userId = (UUID) req.getAttribute("userId");
-            
+
             if (userId == null) {
-                resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
+                sendJsonError(resp, HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
                 return;
             }
 
             SendJoinRequestDTO requestDto = gson.fromJson(req.getReader(), SendJoinRequestDTO.class);
 
             if (requestDto == null || requestDto.getGroupId() == null || requestDto.getGroupId().trim().isEmpty()) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Group ID is required.");
+                sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Group ID is required.");
                 return;
             }
 
@@ -81,47 +72,33 @@ public class GroupController {
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
             resp.setStatus(HttpServletResponse.SC_CREATED);
-            
+
             String jsonResponse = gson.toJson(new ApiResponse(true, "Join request sent successfully", responseDto));
             resp.getWriter().write(jsonResponse);
 
         } catch (IllegalArgumentException e) {
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write(gson.toJson(new ApiResponse(false, e.getMessage(), null)));
-            
+            sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (IllegalStateException e) {
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_CONFLICT);
-            resp.getWriter().write(gson.toJson(new ApiResponse(false, e.getMessage(), null)));
-            
+            sendJsonError(resp, HttpServletResponse.SC_CONFLICT, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write(gson.toJson(new ApiResponse(false, "An error occurred while sending join request: " + e.getMessage(), null)));
+            sendJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An error occurred while sending join request.");
         }
     }
 
-    /**
-     * NEW METHOD: Accept or reject a join request (admin only)
-     */
     public void respondToJoinRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             UUID adminUserId = (UUID) req.getAttribute("userId");
-            
+
             if (adminUserId == null) {
-                resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
+                sendJsonError(resp, HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
                 return;
             }
 
             RespondToJoinRequestDTO requestDto = gson.fromJson(req.getReader(), RespondToJoinRequestDTO.class);
 
             if (requestDto == null || requestDto.getRequestId() == null || requestDto.getAction() == null) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Request ID and action are required.");
+                sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Request ID and action are required.");
                 return;
             }
 
@@ -130,56 +107,40 @@ public class GroupController {
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
             resp.setStatus(HttpServletResponse.SC_OK);
-            
-            String message = requestDto.getAction().equalsIgnoreCase("ACCEPT") 
-                ? "Join request accepted successfully" 
-                : "Join request rejected successfully";
-            
+
+            String message = requestDto.getAction().equalsIgnoreCase("ACCEPT")
+                    ? "Join request accepted successfully"
+                    : "Join request rejected successfully";
+
             String jsonResponse = gson.toJson(new ApiResponse(true, message, responseDto));
             resp.getWriter().write(jsonResponse);
 
         } catch (IllegalArgumentException e) {
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write(gson.toJson(new ApiResponse(false, e.getMessage(), null)));
-            
+            sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (IllegalStateException e) {
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.getWriter().write(gson.toJson(new ApiResponse(false, e.getMessage(), null)));
-            
+            sendJsonError(resp, HttpServletResponse.SC_FORBIDDEN, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write(gson.toJson(new ApiResponse(false, "An error occurred: " + e.getMessage(), null)));
+            sendJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An error occurred.");
         }
     }
 
-    /**
-     * NEW METHOD: Get pending join requests for a group (admin only)
-     */
     public void getPendingRequests(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             UUID adminUserId = (UUID) req.getAttribute("userId");
-            
+
             if (adminUserId == null) {
-                resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
+                sendJsonError(resp, HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
                 return;
             }
 
-            // Extract groupId from path parameter
             String pathInfo = req.getPathInfo();
             if (pathInfo == null || pathInfo.length() <= 1) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Group ID is required in path.");
+                sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Group ID is required in path.");
                 return;
             }
 
-            // Remove leading slash and extract groupId
-            String groupIdStr = pathInfo.substring(1); // Remove leading "/"
+            String groupIdStr = pathInfo.substring(1);
             if (groupIdStr.contains("/")) {
                 groupIdStr = groupIdStr.substring(0, groupIdStr.indexOf("/"));
             }
@@ -188,7 +149,7 @@ public class GroupController {
             try {
                 groupId = UUID.fromString(groupIdStr);
             } catch (IllegalArgumentException e) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid group ID format.");
+                sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid group ID format.");
                 return;
             }
 
@@ -197,41 +158,68 @@ public class GroupController {
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
             resp.setStatus(HttpServletResponse.SC_OK);
-            
+
             String jsonResponse = gson.toJson(new ApiResponse(true, "Pending requests retrieved successfully", pendingRequests));
             resp.getWriter().write(jsonResponse);
 
         } catch (IllegalArgumentException e) {
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write(gson.toJson(new ApiResponse(false, e.getMessage(), null)));
-            
+            sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (IllegalStateException e) {
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.getWriter().write(gson.toJson(new ApiResponse(false, e.getMessage(), null)));
-            
+            sendJsonError(resp, HttpServletResponse.SC_FORBIDDEN, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write(gson.toJson(new ApiResponse(false, "An error occurred: " + e.getMessage(), null)));
+            sendJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An error occurred.");
         }
     }
 
-    /**
-     * Placeholder for join group (you can implement this later)
-     */
-    public void joinGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED, "This endpoint is not yet implemented.");
+    public void removeMember(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        try {
+            UUID adminUserId = (UUID) req.getAttribute("userId");
+            if (adminUserId == null) {
+                sendJsonError(resp, HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
+                return;
+            }
+
+            RemoveMemberRequest requestDto = gson.fromJson(req.getReader(), RemoveMemberRequest.class);
+
+            if (requestDto == null ||
+                    requestDto.getGroupId() == null || requestDto.getGroupId().trim().isEmpty() ||
+                    requestDto.getUserIdToRemove() == null || requestDto.getUserIdToRemove().trim().isEmpty()) {
+                sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "groupId and userIdToRemove are required.");
+                return;
+            }
+
+            RemoveMemberResponse responseDto = groupService.removeMemberFromGroup(adminUserId, requestDto);
+
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            resp.setStatus(HttpServletResponse.SC_OK);
+
+            String json = gson.toJson(new ApiResponse(true, "Member removed successfully", responseDto));
+            resp.getWriter().write(json);
+
+        } catch (IllegalArgumentException e) {
+            sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        } catch (IllegalStateException e) {
+            sendJsonError(resp, HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error while removing member.");
+        }
     }
 
-    /**
-     * Inner class for standardized API responses
-     */
+    public void joinGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        sendJsonError(resp, HttpServletResponse.SC_NOT_IMPLEMENTED, "This endpoint is not yet implemented.");
+    }
+
+    private void sendJsonError(HttpServletResponse resp, int status, String message) throws IOException {
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        resp.setStatus(status);
+        String json = gson.toJson(new ApiResponse(false, message, null));
+        resp.getWriter().write(json);
+    }
+
     private static class ApiResponse {
         private final boolean success;
         private final String message;
