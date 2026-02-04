@@ -12,6 +12,9 @@ import com.travelmate.repository.group.GroupJoinRequestRepository;
 import com.travelmate.repository.group.GroupRepository;
 import com.travelmate.repository.user.UserRepository;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,17 +33,52 @@ public class GroupService {
     }
 
     /**
-     * KEEP YOUR EXISTING createGroup METHOD HERE
-     * This is just a placeholder - use your actual implementation
+     * Create a new travel group
      */
     public GroupResponseDto createGroup(GroupCreateDto requestDto, UUID adminUserId) {
-        // Your existing implementation goes here
-        throw new UnsupportedOperationException("Replace this with your existing createGroup implementation");
+        // 1. Validate input
+        validateGroupCreateDto(requestDto);
+
+        // 2. Find the admin user
+        Optional<User> adminOpt = userRepository.findById(adminUserId);
+        if (adminOpt.isEmpty()) {
+            throw new IllegalArgumentException("Admin user not found");
+        }
+        User admin = adminOpt.get();
+
+        // 3. Create new TravelGroup entity
+        TravelGroup group = new TravelGroup();
+        group.setGroupName(requestDto.getGroupName());
+        group.setDescription(requestDto.getDescription());
+        group.setAdmin(admin);
+        group.setMaxSize(requestDto.getMaxSize());
+        group.setDestination(requestDto.getDestination());
+        group.setStartDate(requestDto.getStartDate());
+        group.setEndDate(requestDto.getEndDate());
+        group.setBudgetMin(requestDto.getBudgetMin());
+        group.setBudgetMax(requestDto.getBudgetMax());
+        
+        // Set group interests (note: your DTO uses 'interests', entity uses 'groupInterest')
+        if (requestDto.getInterests() != null && !requestDto.getInterests().isEmpty()) {
+            group.setGroupInterest(new ArrayList<>(requestDto.getInterests()));
+        } else {
+            group.setGroupInterest(new ArrayList<>());
+        }
+
+        // 4. Add admin as the first member
+        List<User> members = new ArrayList<>();
+        members.add(admin);
+        group.setMembers(members);
+
+        // 5. Save the group
+        groupRepository.save(group);
+
+        // 6. Convert to DTO using your static fromEntity method
+        return GroupResponseDto.fromEntity(group);
     }
 
     /**
-     * NEW METHOD: Send a join request to a group
-     * Works with your existing GroupRepository that returns TravelGroup directly
+     * Send a join request to a group
      */
     public JoinRequestResponseDTO sendJoinRequest(UUID userId, SendJoinRequestDTO requestDTO) {
         // 1. Validate groupId format
@@ -51,14 +89,14 @@ public class GroupService {
             throw new IllegalArgumentException("Invalid group ID format");
         }
 
-        // 2. Check if user exists (UserRepository uses Optional)
+        // 2. Check if user exists
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
         User user = userOpt.get();
 
-        // 3. Check if group exists (using your existing repository that returns TravelGroup directly)
+        // 3. Check if group exists
         TravelGroup group = groupRepository.findById(groupId);
         if (group == null) {
             throw new IllegalArgumentException("Group not found");
@@ -70,7 +108,10 @@ public class GroupService {
         }
 
         // 5. Check if user is already a member
-        if (group.getMembers().stream().anyMatch(member -> member.getId().equals(userId))) {
+        boolean isAlreadyMember = group.getMembers().stream()
+            .anyMatch(member -> member.getId().equals(userId));
+        
+        if (isAlreadyMember) {
             throw new IllegalStateException("You are already a member of this group");
         }
 
@@ -95,26 +136,103 @@ public class GroupService {
         GroupJoinRequest savedRequest = joinRequestRepository.save(joinRequest);
 
         // 10. Convert to DTO and return
-        return convertToDTO(savedRequest);
+        return convertJoinRequestToDTO(savedRequest);
     }
 
     /**
-     * Helper method: Convert GroupJoinRequest entity to DTO
+     * Validate GroupCreateDto
      */
-    private JoinRequestResponseDTO convertToDTO(GroupJoinRequest request) {
+    private void validateGroupCreateDto(GroupCreateDto dto) {
+        if (dto.getGroupName() == null || dto.getGroupName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Group name is required");
+        }
+
+        if (dto.getStartDate() == null) {
+            throw new IllegalArgumentException("Start date is required");
+        }
+
+        if (dto.getEndDate() == null) {
+            throw new IllegalArgumentException("End date is required");
+        }
+
+        if (dto.getStartDate().isAfter(dto.getEndDate())) {
+            throw new IllegalArgumentException("Start date must be before end date");
+        }
+
+        // FIXED: More lenient date validation - allow dates from yesterday onwards
+        // This helps with timezone issues and allows some flexibility
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        if (dto.getStartDate().isBefore(yesterday)) {
+            // Debug logging
+            System.err.println("=== DATE VALIDATION DEBUG ===");
+            System.err.println("Server date (now): " + LocalDate.now());
+            System.err.println("Yesterday: " + yesterday);
+            System.err.println("Requested start date: " + dto.getStartDate());
+            System.err.println("Is before yesterday? " + dto.getStartDate().isBefore(yesterday));
+            System.err.println("============================");
+            
+            throw new IllegalArgumentException(
+                "Start date cannot be more than 1 day in the past. " +
+                "Server date: " + LocalDate.now() + 
+                ", Requested date: " + dto.getStartDate()
+            );
+        }
+
+        if (dto.getBudgetMin() == null || dto.getBudgetMin() < 0) {
+            throw new IllegalArgumentException("Minimum budget must be non-negative");
+        }
+
+        if (dto.getBudgetMax() == null || dto.getBudgetMax() < 0) {
+            throw new IllegalArgumentException("Maximum budget must be non-negative");
+        }
+
+        if (dto.getBudgetMin() > dto.getBudgetMax()) {
+            throw new IllegalArgumentException("Minimum budget cannot exceed maximum budget");
+        }
+
+        if (dto.getMaxSize() != null && dto.getMaxSize() < 2) {
+            throw new IllegalArgumentException("Group must allow at least 2 members");
+        }
+    }
+
+    /**
+     * Convert GroupJoinRequest entity to JoinRequestResponseDTO
+     * Note: Your DTO uses String IDs, not UUID
+     */
+    private JoinRequestResponseDTO convertJoinRequestToDTO(GroupJoinRequest request) {
         JoinRequestResponseDTO dto = new JoinRequestResponseDTO();
+        
+        // Convert UUIDs to Strings as per your DTO definition
         dto.setRequestId(request.getId().toString());
         dto.setGroupId(request.getGroup().getId().toString());
         dto.setGroupName(request.getGroup().getGroupName());
         dto.setUserId(request.getUser().getId().toString());
-        dto.setUserName(request.getUser().getName());
+        
+        // Get user name - try getName() first (as per your User entity)
+        String userName = request.getUser().getName();
+        if (userName == null && request.getUser().getUserProfile() != null) {
+            userName = request.getUser().getUserProfile().getFullName();
+        }
+        if (userName == null) {
+            userName = request.getUser().getEmail();
+        }
+        dto.setUserName(userName);
+        
         dto.setStatus(request.getStatus().name());
         dto.setMessage(request.getMessage());
         dto.setCreatedAt(request.getCreatedAt());
         dto.setRespondedAt(request.getRespondedAt());
         
+        // Set respondedBy if available
         if (request.getRespondedBy() != null) {
-            dto.setRespondedBy(request.getRespondedBy().getName());
+            String respondedByName = request.getRespondedBy().getName();
+            if (respondedByName == null && request.getRespondedBy().getUserProfile() != null) {
+                respondedByName = request.getRespondedBy().getUserProfile().getFullName();
+            }
+            if (respondedByName == null) {
+                respondedByName = request.getRespondedBy().getEmail();
+            }
+            dto.setRespondedBy(respondedByName);
         }
         
         return dto;

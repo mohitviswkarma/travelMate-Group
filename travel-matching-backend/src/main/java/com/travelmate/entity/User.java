@@ -15,7 +15,6 @@ import com.travelmate.entity.enums.AccountStatus;
     },
     indexes = {
         @Index(name = "idx_users_account_status", columnList = "account_status"),
-        // @Index(name = "idx_users_created_at", columnList = "created_at"),
         @Index(name = "idx_users_last_login_at", columnList = "last_login_at"),
     }
 )
@@ -26,7 +25,6 @@ public class User {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
     
-
     @Column(name = "email", length = 255, nullable = true)
     private String email;
 
@@ -35,7 +33,6 @@ public class User {
 
     @Column(name = "password_hash", nullable = false, columnDefinition = "TEXT")
     private String passwordHash;
-
 
     @Column(name = "name", length = 100)
     private String name;
@@ -59,6 +56,10 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    // ADD THIS: One-to-One relationship with UserProfile
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private UserProfile userProfile;
+
     public User() {
     }
 
@@ -73,6 +74,7 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
+    // Getters and Setters
     public UUID getId() {
         return id;
     }
@@ -147,5 +149,14 @@ public class User {
 
     public void setLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    // ADD THIS: Getter for UserProfile
+    public UserProfile getUserProfile() {
+        return userProfile;
+    }
+
+    public void setUserProfile(UserProfile userProfile) {
+        this.userProfile = userProfile;
     }
 }
