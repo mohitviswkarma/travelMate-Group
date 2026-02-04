@@ -43,10 +43,9 @@ public class GroupServlet extends HttpServlet {
             case "/remove-member":
                 groupController.removeMember(req, resp);
                 break;
-            
-                case "/leave":
-                // POST /api/group/leave
-                groupController.leaveGroup(req, resp);
+
+            case "/get-members":
+                groupController.getGroupMembers(req, resp);
                 break;
 
             default:

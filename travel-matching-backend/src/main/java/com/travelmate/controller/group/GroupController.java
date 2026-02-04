@@ -5,6 +5,7 @@ import com.travelmate.dto.*;
 import com.travelmate.service.group.GroupService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.travelmate.dto.GroupMembersRequest;
 
 import java.io.IOException;
 import java.util.List;
@@ -172,46 +173,6 @@ public class GroupController {
         }
     }
 
-        /**
-     * Authenticated user leaves the group voluntarily
-     * POST /api/group/leave
-     */
-    public void leaveGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            UUID userId = (UUID) req.getAttribute("userId");
-            if (userId == null) {
-                sendJsonError(resp, HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
-                return;
-            }
-
-            LeaveGroupRequest requestDto = gson.fromJson(req.getReader(), LeaveGroupRequest.class);
-
-            if (requestDto == null || 
-                requestDto.getGroupId() == null || 
-                requestDto.getGroupId().trim().isEmpty()) {
-                sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "groupId is required.");
-                return;
-            }
-
-            LeaveGroupResponse responseDto = groupService.leaveGroup(userId, requestDto);
-
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_OK);
-
-            String json = gson.toJson(new ApiResponse(true, "Left group successfully", responseDto));
-            resp.getWriter().write(json);
-
-        } catch (IllegalArgumentException e) {
-            sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-        } catch (IllegalStateException e) {
-            sendJsonError(resp, HttpServletResponse.SC_FORBIDDEN, e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error while leaving group");
-        }
-    }
-
     public void removeMember(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             UUID adminUserId = (UUID) req.getAttribute("userId");
@@ -245,6 +206,40 @@ public class GroupController {
         } catch (Exception e) {
             e.printStackTrace();
             sendJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error while removing member.");
+        }
+    }
+
+    public void getGroupMembers(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        try {
+            UUID userId = (UUID) req.getAttribute("userId");
+            if (userId == null) {
+                sendJsonError(resp, HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
+                return;
+            }
+
+            GroupMembersRequest requestDto = gson.fromJson(req.getReader(), GroupMembersRequest.class);
+
+            if (requestDto == null || requestDto.getGroupId() == null || requestDto.getGroupId().trim().isEmpty()) {
+                sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "groupId is required.");
+                return;
+            }
+
+            GroupMembersResponse responseDto = groupService.getGroupMembers(userId, requestDto);
+
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            resp.setStatus(HttpServletResponse.SC_OK);
+
+            String json = gson.toJson(new ApiResponse(true, "Group members retrieved successfully", responseDto));
+            resp.getWriter().write(json);
+
+        } catch (IllegalArgumentException e) {
+            sendJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        } catch (IllegalStateException e) {
+            sendJsonError(resp, HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving group members.");
         }
     }
 

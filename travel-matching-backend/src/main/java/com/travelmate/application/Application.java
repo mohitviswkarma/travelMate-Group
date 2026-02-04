@@ -53,6 +53,7 @@ public class Application {
         server.registerServlet("GroupServlet", 
         "/api/group/*", 
         dependencies.getGroupServlet());    
+        
 
         server.start();
     }
