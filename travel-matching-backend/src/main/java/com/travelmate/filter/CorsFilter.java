@@ -50,7 +50,7 @@ public class CorsFilter implements Filter {
         // Special handling for WebSocket paths
         if (requestURI != null && requestURI.startsWith("/ws")) {
             System.out.println("🔵 CORS Filter hit for WebSocket path: " + requestURI);
-            System.out.println("   Origin: " + origin);
+        System.out.println("   Origin: " + origin);
             System.out.println("   Method: " + req.getMethod());
         }
 

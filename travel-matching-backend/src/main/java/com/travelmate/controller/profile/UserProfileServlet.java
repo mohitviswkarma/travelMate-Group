@@ -18,7 +18,7 @@ public class UserProfileServlet extends HttpServlet {
         if ("/me".equals(path) || path == null || "/".equals(path)) {
             profileController.getUserProfile(req, resp);
         } else {
-            System.out.println("Profile Path not found: " + path);
+        //    System.out.println("Profile Path not found: " + path);
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }

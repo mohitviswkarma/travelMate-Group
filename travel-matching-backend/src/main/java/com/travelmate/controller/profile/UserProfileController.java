@@ -25,10 +25,7 @@ public class UserProfileController {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
-        System.out.println("========================================");
-        System.out.println("👤 GET USER PROFILE CALLED");
-        System.out.println("========================================");
-
+    
         UUID userId = getUserIdFromRequest(req, resp);
         if (userId == null) {
             System.out.println("❌ userId is null - returning");
@@ -41,29 +38,29 @@ public class UserProfileController {
             UserProfile userProfile = userProfileService.findByUserId(userId);
 
             if (userProfile == null) {
-                System.out.println("❌ User profile not found");
+                // System.out.println("❌ User profile not found");
                 resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 resp.getWriter().write("{\"error\":\"User profile not found\"}");
                 return;
             }
 
-            System.out.println("✅ Profile found");
-            System.out.println("📧 Email: " + userProfile.getEmail());
-            System.out.println("📝 Profile completed: " + userProfile.isProfileCompleted());
+            // System.out.println("✅ Profile found");
+            // System.out.println("📧 Email: " + userProfile.getEmail());
+            // System.out.println("📝 Profile completed: " + userProfile.isProfileCompleted());
             
             // ✅ Serialize to JSON
             String jsonResponse = gson.toJson(userProfile);
             
-            System.out.println("✅ JSON serialization successful");
-            System.out.println("📤 Sending response");
-            System.out.println("========================================\n");
+            // System.out.println("✅ JSON serialization successful");
+            // System.out.println("📤 Sending response");
+            // System.out.println("========================================\n");
 
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write(jsonResponse);
             resp.getWriter().flush();
 
         } catch (Exception e) {
-            System.out.println("❌ Error in getUserProfile: " + e.getMessage());
+            // System.out.println("❌ Error in getUserProfile: " + e.getMessage());
             e.printStackTrace();
             
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -75,9 +72,9 @@ public class UserProfileController {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
-        System.out.println("========================================");
-        System.out.println("🔄 UPDATE USER PROFILE CALLED");
-        System.out.println("========================================");
+        // System.out.println("========================================");
+        // System.out.println("🔄 UPDATE USER PROFILE CALLED");
+        // System.out.println("========================================");
 
         // 1. Get the userId from the request (using your existing helper)
         UUID userId = getUserIdFromRequest(req, resp);
@@ -93,7 +90,7 @@ public class UserProfileController {
                 }
             }
             String body = buffer.toString();
-            System.out.println("📥 Received JSON: " + body);
+            // System.out.println("📥 Received JSON: " + body);
 
             // 3. Convert JSON to our UpdateUser DTO
             UpdateUser updateData = gson.fromJson(body, UpdateUser.class);
@@ -102,27 +99,27 @@ public class UserProfileController {
             // We'll add this 'processUpdate' method to your service in the next step
             UserProfile updatedProfile = userProfileService.processUpdate(userId, updateData);
 
-            System.out.println("✅ Profile updated successfully for: " + userId);
+            // System.out.println("✅ Profile updated successfully for: " + userId);
 
             // 5. Send back the updated profile as JSON
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write(gson.toJson(updatedProfile));
 
         } catch (Exception e) {
-            System.out.println("❌ Error in updateUserProfile: " + e.getMessage());
+            // System.out.println("❌ Error in updateUserProfile: " + e.getMessage());
             e.printStackTrace();
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write("{\"error\":\"Failed to update profile: " + e.getMessage() + "\"}");
         }
-        System.out.println("========================================\n");
+        // System.out.println("========================================\n");
     }
 
     private UUID getUserIdFromRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         Object userIdAttr = req.getAttribute("userId");
         
-        System.out.println("🔎 Checking userId attribute...");
-        System.out.println("   userId attribute: " + userIdAttr);
-        System.out.println("   userId type: " + (userIdAttr != null ? userIdAttr.getClass().getName() : "null"));
+       // System.out.println("🔎 Checking userId attribute...");
+        // System.out.println("   userId attribute: " + userIdAttr);
+        // System.out.println("   userId type: " + (userIdAttr != null ? userIdAttr.getClass().getName() : "null"));
         
         if (userIdAttr == null) {
             System.out.println("❌ userId attribute is NULL");
@@ -140,11 +137,11 @@ public class UserProfileController {
                 userId = UUID.fromString(userIdAttr.toString());
             }
             
-            System.out.println("✅ userId parsed: " + userId);
+         //   System.out.println("✅ userId parsed: " + userId);
             return userId;
             
         } catch (IllegalArgumentException e) {
-            System.out.println("❌ Invalid UUID format: " + userIdAttr);
+         //   System.out.println("❌ Invalid UUID format: " + userIdAttr);
             e.printStackTrace();
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("{\"error\":\"Invalid userId format\"}");

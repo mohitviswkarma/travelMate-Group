@@ -146,30 +146,31 @@ public void sendMatchRequest(UUID senderId, UUID receiverId) throws Exception {
             .orElseThrow(() -> new Exception("Sender not found"));
     User receiver = userRepository.findById(receiverId)
             .orElseThrow(() -> new Exception("Receiver not found"));
+        Double matchScore = calculateMatchScore(sender.getUserProfile(), receiver.getUserProfile());
 
-    MatchConnection connection = new MatchConnection(sender, receiver, FriendRequestStatus.PENDING);
+    MatchConnection connection = new MatchConnection(sender, receiver, FriendRequestStatus.PENDING, matchScore);
     matchConnectionRepository.save(connection);
 }
 
-    public List<UserScore> getConfirmedMatches(UUID currentUserId) {
-        // This now returns matches where I am Sender OR Receiver
-        List<MatchConnection> connections = matchConnectionRepository.findConfirmedMatchesBySender(currentUserId);
-        
-        return connections.stream()
-                .map(conn -> {
-                    // Determine which user is the "friend"
-                    User friend;
-                    if (conn.getSender().getId().equals(currentUserId)) {
-                        friend = conn.getReceiver(); // I sent it, so friend is receiver
-                    } else {
-                        friend = conn.getSender();   // I received it, so friend is sender
-                    }
-                    UserProfile friendProfile = userProfileRepository.findByUserId(friend.getId()).orElse(null);
-                    // Return the friend's profile
-                    return new UserScore(friend, 1.0,friendProfile);
-                })
-                .collect(Collectors.toList());
+public List<UserScore> getConfirmedMatches(UUID currentUserId) {
+    // This now returns matches where I am Sender OR Receiver
+    List<MatchConnection> connections = matchConnectionRepository.findConfirmedMatchesBySender(currentUserId);
+
+    List<UserScore> result = new ArrayList<>();
+    for (MatchConnection conn : connections) {
+        User friend;
+        if (conn.getSender().getId().equals(currentUserId)) {
+            friend = conn.getReceiver();
+        } else {
+            friend = conn.getSender();
+        }
+        UserProfile friendProfile = userProfileRepository.findByUserId(friend.getId()).orElse(null);
+        Double matchScore = conn.getMatchScore();
+        result.add(new UserScore(friend, matchScore, friendProfile));
     }
+    return result;
+}
+    
 
     private double calculateMatchScore(UserProfile me, UserProfile other) {
 
@@ -265,7 +266,7 @@ public void sendMatchRequest(UUID senderId, UUID receiverId) throws Exception {
                     // Let's create a dedicated DTO inside the controller for the response, 
                     // or overload UserScore to include connectionId if needed. 
                     // For now, let's map it to a new simple structure or reuse UserScore.
-                    return new UserScore(sender, 0.0,senderProfile); // Score 0.0 or recalcluate if needed
+                    return new UserScore(sender, conn.getMatchScore(),senderProfile);
                 })
                 .collect(Collectors.toList());
     }

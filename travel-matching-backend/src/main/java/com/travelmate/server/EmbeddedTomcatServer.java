@@ -87,11 +87,11 @@ public class EmbeddedTomcatServer {
             (ServerContainer) context.getServletContext()
                 .getAttribute("jakarta.websocket.server.ServerContainer");
 
-        System.out.println("WS CONTAINER = " + wsContainer);
+    //    System.out.println("WS CONTAINER = " + wsContainer);
 
         // 🔥 REGISTER WS ENDPOINT
         wsContainer.addEndpoint(ChatWebSocket.class);
-        System.out.println("✅ WS endpoint registered: /ws/chat");
+    //    System.out.println("✅ WS endpoint registered: /ws/chat");
 
         System.out.println("🚀 Server running on port 8085");
         tomcat.getServer().await();

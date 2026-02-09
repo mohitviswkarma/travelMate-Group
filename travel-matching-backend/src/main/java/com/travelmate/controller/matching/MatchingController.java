@@ -134,8 +134,8 @@ public class MatchingController {
     public void getIncomingRequests(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             UUID currentUserId = (UUID) req.getAttribute("userId");
-            List<MatchingService.IncomingRequestDto> requests = matchingService.getPendingRequests(currentUserId);
-            
+            List<MatchingService.UserScore> requests = matchingService.getIncomingMatchRequests(currentUserId);
+            System.out.println("Incoming Requests: " + requests);
             resp.setContentType("application/json");
             resp.getWriter().write(gson.toJson(requests));
         } catch (Exception e) {

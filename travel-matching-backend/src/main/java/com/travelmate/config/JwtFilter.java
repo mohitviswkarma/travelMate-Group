@@ -18,22 +18,22 @@ public class JwtFilter implements Filter {
             FilterChain chain
     ) throws IOException, ServletException {
 
-        System.out.println("========================================");
-        System.out.println("🔍 JWT FILTER CALLED");
-        System.out.println("========================================");
+        // System.out.println("========================================");
+        // System.out.println("🔍 JWT FILTER CALLED");
+        // System.out.println("========================================");
 
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         String path = httpRequest.getRequestURI();
-        System.out.println("📍 Path: " + path);
+      //  System.out.println("📍 Path: " + path);
 
         /* =========================
            1. PUBLIC ROUTES
            ========================= */
 
         if (path.contains("/auth/login") || path.contains("/auth/register")) {
-            System.out.println("✅ Public route - skipping JWT filter");
+         //   System.out.println("✅ Public route - skipping JWT filter");
             chain.doFilter(request, response);
             return;
         }
@@ -43,7 +43,7 @@ public class JwtFilter implements Filter {
            ========================= */
 
         String authHeader = httpRequest.getHeader("Authorization");
-        System.out.println("📋 Authorization Header: " + authHeader);
+      //  System.out.println("📋 Authorization Header: " + authHeader);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             sendError(httpResponse, "Authorization header missing or invalid");
@@ -51,7 +51,7 @@ public class JwtFilter implements Filter {
         }
 
         String token = authHeader.substring(7).trim();
-        System.out.println("🎫 Token extracted");
+      //  System.out.println("🎫 Token extracted");
 
         try {
             /* =========================
@@ -61,9 +61,9 @@ public class JwtFilter implements Filter {
             String email = JwtUtil.extractEmail(token);
             UUID userId = JwtUtil.extractUserId(token);
 
-            System.out.println("✅ JWT parsed successfully");
-            System.out.println("📧 Email  : " + email);
-            System.out.println("🆔 UserId : " + userId);
+            // System.out.println("✅ JWT parsed successfully");
+            // System.out.println("📧 Email  : " + email);
+            // System.out.println("🆔 UserId : " + userId);
 
             if (email == null || userId == null) {
                 sendError(httpResponse, "Invalid token payload");
@@ -77,8 +77,8 @@ public class JwtFilter implements Filter {
             httpRequest.setAttribute("userEmail", email);
             httpRequest.setAttribute("userId", userId);
 
-            System.out.println("✅ userEmail & userId attached to request");
-            System.out.println("========================================\n");
+            // System.out.println("✅ userEmail & userId attached to request");
+            // System.out.println("========================================\n");
 
             chain.doFilter(request, response);
 

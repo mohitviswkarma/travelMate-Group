@@ -36,14 +36,18 @@ public class MatchConnection {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "match_score", nullable = false)
+    private Double matchScore;
+
     public MatchConnection() {}
 
-    public MatchConnection(User sender, User receiver, FriendRequestStatus status) {
+    public MatchConnection(User sender, User receiver, FriendRequestStatus status, Double matchScore) {
         this.sender = sender;
         this.receiver = receiver;
         this.status = status;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.matchScore = matchScore;
     }
 
     @PreUpdate
@@ -57,7 +61,10 @@ public class MatchConnection {
     public User getReceiver() { return receiver; }
     public FriendRequestStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setStatus(FriendRequestStatus status) { this.status = status; }
+    public Double getMatchScore() { return matchScore; }
+    public void setMatchScore(Double matchScore) { this.matchScore = matchScore; }
     
 
 }

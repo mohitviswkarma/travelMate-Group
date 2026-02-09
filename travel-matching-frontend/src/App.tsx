@@ -7,6 +7,8 @@ import ChatPage from "./pages/ChatPage"
 import DestinationsPage from "./pages/Destinations"
 import CommunitiesPage from "./pages/communities"
 import StoriesPage from "./pages/stories"
+import UserMatchesPage from "./pages/UserMatchesPage"
+import GroupMatchesPage from "./pages/GroupMatchesPage"
 
           
 function App() {
@@ -17,6 +19,8 @@ function App() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/feed" element={<FeedPage />} />
+          <Route path="/matches/users" element={<UserMatchesPage />} />
+          <Route path="/matches/groups" element={<GroupMatchesPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/destinations" element={<DestinationsPage />} />
           <Route path="/communities" element={<CommunitiesPage />} />
