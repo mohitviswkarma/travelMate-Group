@@ -1,32 +1,41 @@
 package com.travelmate.service.chat;
 
+import com.travelmate.entity.Message;
+import com.travelmate.repository.chat.MessageDAO;
 
-import java.util.UUID;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import org.springframework.stereotype.Service;
+public class ChatService {        
 
-import com.travelmate.dto.ChatMessageRequest;
-import com.travelmate.entity.ChatMessage;
-import com.travelmate.repository.chat.ChatMessageRepository;
+    private final MessageDAO messageDAO;
+    private final ExecutorService executorService;
 
-@Service
-public class ChatService {
-
-    private final ChatMessageRepository repo;
-
-    public ChatService(ChatMessageRepository repo) {
-        this.repo = repo;
+    public ChatService(MessageDAO messageDAO) {
+        this.messageDAO = messageDAO;
+        // Allocate threads based on available CPU cores for optimal DB I/O scaling
+        int threads = Runtime.getRuntime().availableProcessors() * 2;
+        this.executorService = Executors.newFixedThreadPool(threads);
     }
 
-    public ChatMessage save(
-            UUID senderId,
-            ChatMessageRequest req) {
+    public void saveMessageAsync(Message message) {
+        executorService.submit(() -> {
+            try {
+                messageDAO.saveMessage(message);
+            } catch (Exception e) {
+                System.err.println("Chat DB Persist Error: " + e.getMessage());
+            }
+        });
+    }
 
-        ChatMessage msg = new ChatMessage();
-        msg.setSenderId(senderId);
-        msg.setReceiverId(req.getReceiverId());
-        msg.setContent(req.getContent());
+    public List<Message> getChatHistory(String conversationId, int offset, int limit) {
+        return messageDAO.getConversationMessages(conversationId, offset, limit);
+    }
 
-        return repo.save(msg);
+    public void shutdown() {
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdown();
+        }
     }
 }

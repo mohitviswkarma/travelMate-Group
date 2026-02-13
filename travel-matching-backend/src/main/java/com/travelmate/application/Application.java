@@ -4,6 +4,7 @@ import com.travelmate.config.AppDependencies;
 import com.travelmate.config.JwtFilter;
 import com.travelmate.server.EmbeddedTomcatServer;
 
+import com.travelmate.websocket.ChatWebSocket;
 public class Application {
 
     public static void main(String[] args) {
@@ -55,7 +56,13 @@ public class Application {
         server.registerServlet("GroupServlet", 
         "/api/group/*", 
         dependencies.getGroupServlet());    
-        
+
+    
+
+// Register ChatHistoryServlet logic
+server.registerFilter("JwtFilterChat", "/api/chat/*", new JwtFilter());
+server.registerServlet("ChatHistoryServlet", "/api/chat/history", dependencies.getChatHistoryServlet());
+ChatWebSocket.setChatService(dependencies.getChatService());
 
         server.start();
     }

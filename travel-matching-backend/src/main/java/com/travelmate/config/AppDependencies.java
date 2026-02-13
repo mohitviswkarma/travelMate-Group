@@ -36,6 +36,11 @@ import com.travelmate.controller.matching.MatchingController;
 import com.travelmate.controller.matching.MatchingServlet; 
 import com.travelmate.service.otp.otpService;
 
+//Chat
+import com.travelmate.repository.chat.MessageDAO;
+import com.travelmate.service.chat.ChatService;
+import com.travelmate.controller.chat.ChatHistoryServlet;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -47,6 +52,11 @@ public class AppDependencies {
     private final UserProfileServlet userProfileServlet;
     private final MatchingServlet matchingServlet; 
     private final GroupServlet groupServlet;
+
+    //Chat
+    private final ChatHistoryServlet chatHistoryServlet;
+    private final ChatService chatService;
+
 
     public AppDependencies() {
 
@@ -66,6 +76,8 @@ public class AppDependencies {
         MatchConnectionRepository matchConnectionRepository = new MatchConnectionRepositoryImpl(entityManager);
         otprepo otpRepository = new otprepo(entityManager);
         GroupRepository groupRepository = new GroupRepositoryImpl(entityManager);
+
+        
        
         /* =========================
            SERVICES
@@ -75,6 +87,10 @@ public class AppDependencies {
         UserProfileService userProfileService = new UserProfileService(userProfileRepository, entityManager);
 
         AuthService authService = new AuthService(userService, userProfileRepository);
+        MessageDAO messageDAO = new MessageDAO();
+this.chatService = new ChatService(messageDAO);
+
+
 
         GroupJoinRequestRepository groupJoinRequestRepository = new GroupJoinRequestRepositoryImpl(entityManager);
         MatchingService matchingService = new MatchingService(
@@ -95,7 +111,7 @@ public class AppDependencies {
 
        GroupService groupService = new GroupService(groupRepository, userRepository, groupJoinRequestRepository);
 
-        
+       this.chatHistoryServlet = new ChatHistoryServlet(chatService, gson);
 
         /* =========================
            CONTROLLERS
@@ -130,5 +146,14 @@ public class AppDependencies {
 
     public GroupServlet getGroupServlet() {
         return groupServlet;
+    }
+
+    //Chat
+    public ChatHistoryServlet getChatHistoryServlet() {
+        return chatHistoryServlet;
+    }
+    
+    public ChatService getChatService() {
+        return chatService;
     }
 }

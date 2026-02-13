@@ -61,6 +61,7 @@ public class MatchConnectionRepositoryImpl implements MatchConnectionRepository 
     // Add these implementations
 @Override
 public MatchConnection findById(UUID id) {
+    // here id is the receiverId not the 
     return entityManager.find(MatchConnection.class, id);
 }
 

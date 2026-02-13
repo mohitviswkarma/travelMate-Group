@@ -6,8 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.Gson;
 import com.travelmate.config.JwtUtil;
-import com.travelmate.repository.chat.MessageDAO;
 import com.travelmate.entity.Message;
+import com.travelmate.service.chat.ChatService;
 import com.travelmate.utility.ConversationUtil;
 
 import jakarta.websocket.CloseReason;
@@ -23,79 +23,71 @@ public class ChatWebSocket {
 
     private static final Map<UUID, Session> ACTIVE_USERS = new ConcurrentHashMap<>();
     private static final Gson gson = new Gson();
-    private static final MessageDAO messageDAO = new MessageDAO();
+    private static ChatService chatService;
+
+    public static void setChatService(ChatService service) {
+        chatService = service;
+    }
 
     @OnOpen
     public void onOpen(Session session) {
-
         String token = getQueryParam(session, "token");
 
         if (token == null || !JwtUtil.isValid(token)) {
-            close(session, "Invalid token");
+            close(session, "Invalid authentication token");
             return;
         }
 
         UUID userId = JwtUtil.extractUserId(token);
-
         session.getUserProperties().put("userId", userId);
         ACTIVE_USERS.put(userId, session);
-
-        System.out.println("✅ WS CONNECTED userId=" + userId);
     }
 
     @OnMessage
     public void onMessage(String payload, Session senderSession) {
-
-        UUID senderId = (UUID) senderSession.getUserProperties().get("userId");
-
-        if (senderId == null) {
-            System.out.println("❌ senderId NULL");
-            return;
-        }
-
-        ChatPayload msg;
         try {
-            msg = gson.fromJson(payload, ChatPayload.class);
+            UUID senderId = (UUID) senderSession.getUserProperties().get("userId");
+            if (senderId == null) return;
+
+            ChatPayload msg = gson.fromJson(payload, ChatPayload.class);
+            UUID receiverId = msg.to;
+            
+            String conversationId = ConversationUtil.buildConversationId(senderId, receiverId);
+
+            long timestamp = System.currentTimeMillis();
+            sendToUser(receiverId, senderId, msg.message, timestamp);
+            // sendToUser(senderId, senderId, msg.message, timestamp); // Echo disabled
+
+            Message message = new Message();
+            message.setSenderId(senderId);
+            message.setReceiverId(receiverId);
+            message.setConversationId(conversationId);
+            message.setMessage(msg.message);
+
+            if (chatService == null) {
+                System.err.println("CRITICAL: chatService is NULL. Dependency injection failed.");
+            } else {
+                chatService.saveMessageAsync(message);
+            }
+
         } catch (Exception e) {
-            System.out.println("❌ Invalid JSON");
-            return;
+            System.err.println("WebSocket onMessage Error:");
+            e.printStackTrace();
         }
-
-        UUID receiverId = msg.to;
-
-        // 🧠 Build conversationId
-        String conversationId =
-                ConversationUtil.buildConversationId(senderId, receiverId);
-
-        // 💾 Save to DB
-        Message message = new Message();
-        message.setSenderId(senderId);
-        message.setReceiverId(receiverId);
-        message.setConversationId(conversationId);
-        message.setMessage(msg.message);
-        System.out.println("💾 Saving message to DB: " + message.getMessage());
-
-
-        messageDAO.saveMessage(message);
-
-        // 📡 Send real-time to receiver
-        sendToUser(receiverId, senderId, msg.message);
-
-        // 🔁 Optional echo back to sender
-        sendToUser(senderId, senderId, msg.message);
     }
 
-    private void sendToUser(UUID to, UUID from, String text) {
+   
+
+    private void sendToUser(UUID to, UUID from, String text, long timestamp) {
         Session session = ACTIVE_USERS.get(to);
 
         if (session != null && session.isOpen()) {
             OutgoingMessage out = new OutgoingMessage();
             out.from = from;
             out.message = text;
-            out.timestamp = System.currentTimeMillis();
+            out.timestamp = timestamp;
 
-            session.getAsyncRemote()
-                    .sendText(gson.toJson(out));
+            session.getAsyncRemote().sendText(gson.toJson(out));
         }
     }
 
@@ -109,10 +101,9 @@ public class ChatWebSocket {
 
     @OnError
     public void onError(Session session, Throwable error) {
+        System.err.println("WebSocket Protocol Error:");
         error.printStackTrace();
     }
-
-    /* ================= HELPERS ================= */
 
     private String getQueryParam(Session session, String key) {
         return session.getRequestParameterMap()
@@ -124,16 +115,9 @@ public class ChatWebSocket {
 
     private void close(Session session, String reason) {
         try {
-            session.close(
-                    new CloseReason(
-                            CloseReason.CloseCodes.VIOLATED_POLICY,
-                            reason
-                    )
-            );
+            session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, reason));
         } catch (Exception ignored) {}
     }
-
-    /* ================= DTOs ================= */
 
     static class ChatPayload {
         UUID to;
