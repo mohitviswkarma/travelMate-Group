@@ -150,13 +150,13 @@ public class MatchingController {
             UUID currentUserId = (UUID) req.getAttribute("userId");
             MatchResponseDto responseDto = gson.fromJson(req.getReader(), MatchResponseDto.class);
 
-            if (responseDto.requestId == null || responseDto.action == null) {
+            if (responseDto.MatchConnectionId == null || responseDto.action == null) {
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Request ID and Action are required");
                 return;
             }
 
             boolean isAccepted = "ACCEPT".equalsIgnoreCase(responseDto.action);
-            matchingService.respondToMatchRequest(currentUserId, UUID.fromString(responseDto.requestId), isAccepted);
+            matchingService.respondToMatchRequest(currentUserId, UUID.fromString(responseDto.MatchConnectionId), isAccepted);
 
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write(gson.toJson(new SuccessResponse("Request " + (isAccepted ? "accepted" : "rejected"))));
@@ -169,7 +169,7 @@ public class MatchingController {
 
     // DTO
     private static class MatchResponseDto {
-        String requestId; // This is the MatchConnection ID
+        String MatchConnectionId; // This is the MatchConnection ID
         String action;    // "ACCEPT" or "REJECT"
     }
 

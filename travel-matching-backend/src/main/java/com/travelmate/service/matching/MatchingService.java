@@ -152,23 +152,24 @@ public void sendMatchRequest(UUID senderId, UUID receiverId) throws Exception {
     matchConnectionRepository.save(connection);
 }
 
-public List<UserScore> getConfirmedMatches(UUID currentUserId) {
+    public List<UserScore> getConfirmedMatches(UUID currentUserId) {
     // This now returns matches where I am Sender OR Receiver
     List<MatchConnection> connections = matchConnectionRepository.findConfirmedMatchesBySender(currentUserId);
 
-    List<UserScore> result = new ArrayList<>();
-    for (MatchConnection conn : connections) {
-        User friend;
-        if (conn.getSender().getId().equals(currentUserId)) {
-            friend = conn.getReceiver();
-        } else {
-            friend = conn.getSender();
+        List<UserScore> result = new ArrayList<>();
+        for (MatchConnection conn : connections) {
+            User friend;
+            if (conn.getSender().getId().equals(currentUserId)) {
+                friend = conn.getReceiver();
+            } else {
+                friend = conn.getSender();
+            }
+            UserProfile friendProfile = userProfileRepository.findByUserId(friend.getId()).orElse(null);
+            Double matchScore = conn.getMatchScore();
+            // include the MatchConnection id
+            result.add(new UserScore(friend, matchScore, friendProfile, conn.getId()));
         }
-        UserProfile friendProfile = userProfileRepository.findByUserId(friend.getId()).orElse(null);
-        Double matchScore = conn.getMatchScore();
-        result.add(new UserScore(friend, matchScore, friendProfile));
-    }
-    return result;
+        return result;
 }
     
 
@@ -252,23 +253,18 @@ public List<UserScore> getConfirmedMatches(UUID currentUserId) {
     // NEW: Method 3 - Get Pending Incoming Requests
     public List<UserScore> getIncomingMatchRequests(UUID receiverId) {
         List<MatchConnection> requests = matchConnectionRepository.findPendingRequestsByReceiver(receiverId);
-        
+
         // Convert MatchConnection -> UserScore (showing the SENDER's details)
-        // We include the 'requestId' (connectionId) so the UI knows which ID to send back for accept/reject
-        return requests.stream()
-                .map(conn -> {
-                    User sender = conn.getSender();
-                    UserProfile senderProfile = userProfileRepository.findByUserId(sender.getId()).orElse(null);
-                    // We can return a UserScore with the connection ID stored temporarily or handle DTO mapping differently.
-                    // For simplicity, we create a UserScore for the sender. 
-                    // NOTE: In a real app, you might want a specific DTO that includes the 'requestId'. 
-                    // Here, we assume the UI can use the UserScore, but we need the Connection ID to respond.
-                    // Let's create a dedicated DTO inside the controller for the response, 
-                    // or overload UserScore to include connectionId if needed. 
-                    // For now, let's map it to a new simple structure or reuse UserScore.
-                    return new UserScore(sender, conn.getMatchScore(),senderProfile);
-                })
-                .collect(Collectors.toList());
+        List<UserScore> result = new ArrayList<>();
+
+        for (MatchConnection conn : requests) {
+            User sender = conn.getSender();
+            UserProfile senderProfile = userProfileRepository.findByUserId(sender.getId()).orElse(null);
+            // include the MatchConnection id
+            result.add(new UserScore(sender, conn.getMatchScore(), senderProfile, conn.getId()));
+        }
+
+        return result;
     }
 
     // Better approach for Method 3: Return the Connection object or specific DTO
@@ -279,8 +275,8 @@ public List<UserScore> getConfirmedMatches(UUID currentUserId) {
     }
 
     // NEW: Method 4 - Respond to Request (Accept/Reject)
-    public void respondToMatchRequest(UUID currentUserId, UUID connectionId, boolean isAccepted) throws Exception {
-        MatchConnection connection = matchConnectionRepository.findById(connectionId);
+    public void respondToMatchRequest(UUID currentUserId, UUID receiverId, boolean isAccepted) throws Exception {
+        MatchConnection connection = matchConnectionRepository.findById(receiverId);
 
         if (connection == null) {
             throw new IllegalArgumentException("Match request not found.");
@@ -329,21 +325,29 @@ public UserProfile findUserProfileFromUserId(User user) {
         public final String name;
         public final String profilePhoto; // Added photo for UI
         public final double matchScore;
-        public final int percentage;     
+        public final int percentage;
         public final int age;
         public final Gender gender;
         public final String bio;
         public final List<String> interests;
+        // NEW: id of the underlying MatchConnection (may be null when not applicable)
+        public final UUID connectionId;
 
-        // CHANGED: Accept UserProfile as an argument
+        // Existing constructor: when there is no MatchConnection id
         public UserScore(User user, double score, UserProfile userProfile) {
+            this(user, score, userProfile, null);
+        }
+
+        // Overloaded constructor that also receives MatchConnection id
+        public UserScore(User user, double score, UserProfile userProfile, UUID connectionId) {
             this.userId = user.getId();
             this.name = user.getName();
-            this.profilePhoto = null; 
-            
+            this.profilePhoto = null;
+
             this.matchScore = Math.round(score * 100.0) / 100.0;
             this.percentage = (int) (this.matchScore * 100);
-            
+            this.connectionId = connectionId;
+
             // Use the passed userProfile object directly
             if (userProfile != null) {
                 this.age = userProfile.getAge() != null ? userProfile.getAge() : 0;
@@ -358,5 +362,5 @@ public UserProfile findUserProfileFromUserId(User user) {
             }
         }
     }
-    }
+}
 
