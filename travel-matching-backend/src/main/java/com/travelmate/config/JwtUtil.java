@@ -59,14 +59,14 @@ public class JwtUtil {
             Claims claims = extractAllClaims(token);
 
             // DEBUG LOGS
-            System.out.println("========== JWT DEBUG ==========");
-            System.out.println("Token Subject (Email): " + claims.getSubject());
-            System.out.println("All Claims Found: " + claims); // Prints the entire map of data
+            // System.out.println("========== JWT DEBUG ==========");
+            // System.out.println("Token Subject (Email): " + claims.getSubject());
+            // System.out.println("All Claims Found: " + claims); // Prints the entire map of data
             
             // 2. Try to get the specific key
             String userIdStr = claims.get("userId", String.class);
-            System.out.println("Extracted 'userId' value: " + userIdStr);
-            System.out.println("===============================");
+           // System.out.println("Extracted 'userId' value: " + userIdStr);
+           // System.out.println("===============================");
 
             // 3. Prevent the crash if null
             if (userIdStr == null) {

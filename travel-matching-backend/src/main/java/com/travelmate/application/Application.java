@@ -48,12 +48,18 @@ public class Application {
                                 
         server.matchingFilter("JwtFilter", "/api/matches/*", new JwtFilter());
                  
-        server.matchingFilter("JwtFilter", "/api/group/*", new JwtFilter());
+        // Register JWT filter for group endpoints (must be before servlet)
+        server.matchingFilter("JwtFilterGroup", "/api/group/*", new JwtFilter());
            
+        // Register GroupServlet to handle all /api/group/* requests
         server.registerServlet("GroupServlet", 
         "/api/group/*", 
         dependencies.getGroupServlet());    
+        
 
         server.start();
     }
 }
+
+
+//java -jar target/travel-matching-backend-jar-with-dependencies.jar

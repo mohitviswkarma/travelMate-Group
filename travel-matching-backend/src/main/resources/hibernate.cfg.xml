@@ -38,5 +38,6 @@
         <mapping class="com.travelmate.entity.UserProfile"/>
         <mapping class="com.travelmate.entity.Message"/>
         <mapping class="com.travelmate.entity.TravelGroup"/>
+        <mapping class="com.travelmate.entity.GroupJoinRequest"/>  <!-- ADD THIS LINE -->
     </session-factory>
 </hibernate-configuration>

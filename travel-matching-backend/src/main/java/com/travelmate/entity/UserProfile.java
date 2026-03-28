@@ -41,11 +41,11 @@ public class UserProfile {
     private String email;
 
     @Column(name = "age")
-    private Short age; // Will show as null in Postman if not set
+    private Short age;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "gender")
-    private Gender gender; // Will show as null in Postman
+    private Gender gender;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "preferred_travel_companion_gender")
@@ -60,7 +60,7 @@ public class UserProfile {
         joinColumns = @JoinColumn(name = "user_id")
     )
     @Column(name = "interest")
-    private List<String> interests; // Will show as [] or null
+    private List<String> interests;
 
     @Column(name = "budget_min")
     private Integer budgetMin;
@@ -71,12 +71,9 @@ public class UserProfile {
     @Column(name = "hometown", length = 100)
     private String hometown;
 
-
     @Column(name = "current_occupation", length = 100)
     private String currentOccupation;
 
-
-    // FIXED: Added @ElementCollection so Hibernate can handle the List
     @ElementCollection(targetClass = Language.class)
     @CollectionTable(
         name = "user_travel_languages",
@@ -106,9 +103,13 @@ public class UserProfile {
 
     // --- GETTERS AND SETTERS ---
 
-    public UUID getUserId() { return userId; }
+    public UUID getUserId() { 
+        return userId; 
+    }
 
-    public User getUser() { return user; }
+    public User getUser() { 
+        return user; 
+    }
 
     public void setUser(User user) {
         this.user = user;
@@ -117,32 +118,69 @@ public class UserProfile {
         }
     }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public String getEmail() { 
+        return email; 
+    }
+    
+    public void setEmail(String email) { 
+        this.email = email; 
+    }
 
-    public Short getAge() { return age; }
-    public void setAge(Short age) { this.age = age; }
+    public Short getAge() { 
+        return age; 
+    }
+    
+    public void setAge(Short age) { 
+        this.age = age; 
+    }
 
-    public Gender getGender() { return gender; }
-    public void setGender(Gender gender) { this.gender = gender; }
+    public Gender getGender() { 
+        return gender; 
+    }
+    
+    public void setGender(Gender gender) { 
+        this.gender = gender; 
+    }
 
-    public PreferredCompanionGender getPreferredTravelCompanionGender() { return preferredTravelCompanionGender; }
-    public void setPreferredTravelCompanionGender(PreferredCompanionGender preferredTravelCompanionGender) { this.preferredTravelCompanionGender = preferredTravelCompanionGender; }
+    public PreferredCompanionGender getPreferredTravelCompanionGender() { 
+        return preferredTravelCompanionGender; 
+    }
+    
+    public void setPreferredTravelCompanionGender(PreferredCompanionGender preferredTravelCompanionGender) { 
+        this.preferredTravelCompanionGender = preferredTravelCompanionGender; 
+    }
 
-    public String getBio() { return bio; }
-    public void setBio(String bio) { this.bio = bio; }
+    public String getBio() { 
+        return bio; 
+    }
+    
+    public void setBio(String bio) { 
+        this.bio = bio; 
+    }
 
-    public List<String> getInterests() { return interests; }
-    public void setInterests(List<String> interests) { this.interests = interests; }
-    public List<Language> getTravelLanguages() { return travelLanguages; }
-    public void setTravelLanguages(List<Language> travelLanguages) { this.travelLanguages = travelLanguages; }
+    public List<String> getInterests() { 
+        return interests; 
+    }
+    
+    public void setInterests(List<String> interests) { 
+        this.interests = interests; 
+    }
+    
+    public List<Language> getTravelLanguages() { 
+        return travelLanguages; 
+    }
+    
+    public void setTravelLanguages(List<Language> travelLanguages) { 
+        this.travelLanguages = travelLanguages; 
+    }
 
-
-
-
-
-    public String getCurrentOccupation() { return currentOccupation; }
-    public void setCurrentOccupation(String currentOccupation) { this.currentOccupation = currentOccupation; }
+    public String getCurrentOccupation() { 
+        return currentOccupation; 
+    }
+    
+    public void setCurrentOccupation(String currentOccupation) { 
+        this.currentOccupation = currentOccupation; 
+    }
 
     public Integer getBudgetMin() {
         return budgetMin;
@@ -168,27 +206,34 @@ public class UserProfile {
         this.hometown = hometown;
     }
 
-    // public String getCurrentOccupation() {
-    //     return currentOccupation;
-    // }
-
-    // public void setCurrentOccupation(String currentOccupation) {
-    //     this.currentOccupation = currentOccupation;
-    // }
-
-
-
     @Transient
     public String getPhoneNumber() {
         return user != null ? user.getMobileNumber() : null;
     }
     
+    // ADD THIS: Helper method to get full name from User entity
+    @Transient
+    public String getFullName() {
+        return user != null ? user.getName() : null;
+    }
 
-    public String getProfilePhotoUrl() { return profilePhotoUrl; }
-    public void setProfilePhotoUrl(String profilePhotoUrl) { this.profilePhotoUrl = profilePhotoUrl; }
+    public String getProfilePhotoUrl() { 
+        return profilePhotoUrl; 
+    }
+    
+    public void setProfilePhotoUrl(String profilePhotoUrl) { 
+        this.profilePhotoUrl = profilePhotoUrl; 
+    }
 
-    public boolean isProfileCompleted() { return profileCompleted; }
-    public void setProfileCompleted(boolean profileCompleted) { this.profileCompleted = profileCompleted; }
+    public boolean isProfileCompleted() { 
+        return profileCompleted; 
+    }
+    
+    public void setProfileCompleted(boolean profileCompleted) { 
+        this.profileCompleted = profileCompleted; 
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public LocalDateTime getUpdatedAt() { 
+        return updatedAt; 
+    }
 }

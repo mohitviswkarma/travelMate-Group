@@ -1,4 +1,5 @@
 package com.travelmate.controller.matching;
+
 import com.travelmate.controller.matching.MatchingController;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -27,21 +28,24 @@ public class MatchingServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        
+
         switch (path) {
             case "/find":
                 // Endpoint: POST /api/matches/find
                 matchingController.findMatches(req, resp);
                 break;
-                case "/send":
+            case "/find-groups":
+                matchingController.findMatchingGroups(req, resp);
+                break;
+            case "/send":
                 // Endpoint: POST /api/matches/send
                 matchingController.sendMatch(req, resp);
                 break;
-                case "/respond":
+            case "/respond":
                 // Endpoint: POST /api/matches/respond
                 matchingController.respondToRequest(req, resp);
                 break;
-                
+
             default:
                 resp.sendError(HttpServletResponse.SC_NOT_FOUND);
                 break;
@@ -62,12 +66,11 @@ public class MatchingServlet extends HttpServlet {
         } else if ("/requests".equals(path)) {
             // Endpoint: GET /api/matches/requests (Incoming Pending)
             matchingController.getIncomingRequests(req, resp);
-        }
-         else {
+        } else {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }
-    
+
     // Optional: Handle Pre-flight requests for CORS
     @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

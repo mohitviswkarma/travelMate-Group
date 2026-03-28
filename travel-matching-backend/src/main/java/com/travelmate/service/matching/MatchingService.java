@@ -1,6 +1,8 @@
 package com.travelmate.service.matching;
 
+import com.travelmate.dto.GroupMatchDto;
 import com.travelmate.entity.MatchConnection;
+import com.travelmate.entity.TravelGroup;
 import com.travelmate.entity.TripRequest;
 import com.travelmate.entity.User;
 import com.travelmate.entity.UserProfile;
@@ -8,6 +10,7 @@ import com.travelmate.entity.enums.FriendRequestStatus;
 import com.travelmate.entity.enums.Gender;
 import com.travelmate.entity.enums.Language;
 import com.travelmate.entity.enums.PreferredCompanionGender;
+import com.travelmate.repository.group.GroupRepository;
 import com.travelmate.repository.matching.MatchConnectionRepository;
 import com.travelmate.repository.trip.TripRequestRepository;
 import com.travelmate.repository.user.UserRepository;
@@ -27,6 +30,7 @@ public class MatchingService {
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
     private final MatchConnectionRepository matchConnectionRepository;
+    private final GroupRepository groupRepository; // NEW Dependency
     // --- ALGORITHM WEIGHTS ---
     private static final double WEIGHT_INTEREST = 0.60; 
     private static final double WEIGHT_PREFS    = 0.40; 
@@ -34,13 +38,32 @@ public class MatchingService {
     public MatchingService(TripRequestRepository tripRequestRepository,
         UserProfileRepository userProfileRepository,
         UserRepository userRepository,
-        MatchConnectionRepository matchConnectionRepository) {
+        MatchConnectionRepository matchConnectionRepository,
+        GroupRepository groupRepository) { // Add this param
 this.tripRequestRepository = tripRequestRepository;
 this.userProfileRepository = userProfileRepository;
 this.userRepository = userRepository;
 this.matchConnectionRepository = matchConnectionRepository;
+this.groupRepository = groupRepository; // Assign it
 }
 
+public List<GroupMatchDto> findMatchingGroups(String destination) {
+    // Edge Case 1: Null or Empty Input
+    if (destination == null || destination.trim().isEmpty()) {
+        return Collections.emptyList();
+    }
+
+    // Edge Case 2: Sanitize input (trim whitespace)
+    String sanitizedDestination = destination.trim();
+
+    // 1. Fetch from Repository (Handles Case-insensitive, Partial, Date, and Capacity)
+    List<TravelGroup> groups = groupRepository.findByDestination(sanitizedDestination);
+
+    // 2. Convert to DTOs
+    return groups.stream()
+            .map(GroupMatchDto::new) // Uses the constructor we defined
+            .collect(Collectors.toList());
+}
 
 public List<UserScore> findMatches(UUID userId, String dest, LocalDate start, LocalDate end, Integer min, Integer max) throws Exception {
     if (dest == null || dest.trim().isEmpty()) {
@@ -123,30 +146,32 @@ public void sendMatchRequest(UUID senderId, UUID receiverId) throws Exception {
             .orElseThrow(() -> new Exception("Sender not found"));
     User receiver = userRepository.findById(receiverId)
             .orElseThrow(() -> new Exception("Receiver not found"));
+        Double matchScore = calculateMatchScore(sender.getUserProfile(), receiver.getUserProfile());
 
-    MatchConnection connection = new MatchConnection(sender, receiver, FriendRequestStatus.PENDING);
+    MatchConnection connection = new MatchConnection(sender, receiver, FriendRequestStatus.PENDING, matchScore);
     matchConnectionRepository.save(connection);
 }
 
     public List<UserScore> getConfirmedMatches(UUID currentUserId) {
-        // This now returns matches where I am Sender OR Receiver
-        List<MatchConnection> connections = matchConnectionRepository.findConfirmedMatchesBySender(currentUserId);
-        
-        return connections.stream()
-                .map(conn -> {
-                    // Determine which user is the "friend"
-                    User friend;
-                    if (conn.getSender().getId().equals(currentUserId)) {
-                        friend = conn.getReceiver(); // I sent it, so friend is receiver
-                    } else {
-                        friend = conn.getSender();   // I received it, so friend is sender
-                    }
-                    UserProfile friendProfile = userProfileRepository.findByUserId(friend.getId()).orElse(null);
-                    // Return the friend's profile
-                    return new UserScore(friend, 1.0,friendProfile);
-                })
-                .collect(Collectors.toList());
-    }
+    // This now returns matches where I am Sender OR Receiver
+    List<MatchConnection> connections = matchConnectionRepository.findConfirmedMatchesBySender(currentUserId);
+
+        List<UserScore> result = new ArrayList<>();
+        for (MatchConnection conn : connections) {
+            User friend;
+            if (conn.getSender().getId().equals(currentUserId)) {
+                friend = conn.getReceiver();
+            } else {
+                friend = conn.getSender();
+            }
+            UserProfile friendProfile = userProfileRepository.findByUserId(friend.getId()).orElse(null);
+            Double matchScore = conn.getMatchScore();
+            // include the MatchConnection id
+            result.add(new UserScore(friend, matchScore, friendProfile, conn.getId()));
+        }
+        return result;
+}
+    
 
     private double calculateMatchScore(UserProfile me, UserProfile other) {
 
@@ -228,23 +253,18 @@ public void sendMatchRequest(UUID senderId, UUID receiverId) throws Exception {
     // NEW: Method 3 - Get Pending Incoming Requests
     public List<UserScore> getIncomingMatchRequests(UUID receiverId) {
         List<MatchConnection> requests = matchConnectionRepository.findPendingRequestsByReceiver(receiverId);
-        
+
         // Convert MatchConnection -> UserScore (showing the SENDER's details)
-        // We include the 'requestId' (connectionId) so the UI knows which ID to send back for accept/reject
-        return requests.stream()
-                .map(conn -> {
-                    User sender = conn.getSender();
-                    UserProfile senderProfile = userProfileRepository.findByUserId(sender.getId()).orElse(null);
-                    // We can return a UserScore with the connection ID stored temporarily or handle DTO mapping differently.
-                    // For simplicity, we create a UserScore for the sender. 
-                    // NOTE: In a real app, you might want a specific DTO that includes the 'requestId'. 
-                    // Here, we assume the UI can use the UserScore, but we need the Connection ID to respond.
-                    // Let's create a dedicated DTO inside the controller for the response, 
-                    // or overload UserScore to include connectionId if needed. 
-                    // For now, let's map it to a new simple structure or reuse UserScore.
-                    return new UserScore(sender, 0.0,senderProfile); // Score 0.0 or recalcluate if needed
-                })
-                .collect(Collectors.toList());
+        List<UserScore> result = new ArrayList<>();
+
+        for (MatchConnection conn : requests) {
+            User sender = conn.getSender();
+            UserProfile senderProfile = userProfileRepository.findByUserId(sender.getId()).orElse(null);
+            // include the MatchConnection id
+            result.add(new UserScore(sender, conn.getMatchScore(), senderProfile, conn.getId()));
+        }
+
+        return result;
     }
 
     // Better approach for Method 3: Return the Connection object or specific DTO
@@ -255,8 +275,8 @@ public void sendMatchRequest(UUID senderId, UUID receiverId) throws Exception {
     }
 
     // NEW: Method 4 - Respond to Request (Accept/Reject)
-    public void respondToMatchRequest(UUID currentUserId, UUID connectionId, boolean isAccepted) throws Exception {
-        MatchConnection connection = matchConnectionRepository.findById(connectionId);
+    public void respondToMatchRequest(UUID currentUserId, UUID receiverId, boolean isAccepted) throws Exception {
+        MatchConnection connection = matchConnectionRepository.findById(receiverId);
 
         if (connection == null) {
             throw new IllegalArgumentException("Match request not found.");
@@ -305,21 +325,29 @@ public UserProfile findUserProfileFromUserId(User user) {
         public final String name;
         public final String profilePhoto; // Added photo for UI
         public final double matchScore;
-        public final int percentage;     
+        public final int percentage;
         public final int age;
         public final Gender gender;
         public final String bio;
         public final List<String> interests;
+        // NEW: id of the underlying MatchConnection (may be null when not applicable)
+        public final UUID connectionId;
 
-        // CHANGED: Accept UserProfile as an argument
+        // Existing constructor: when there is no MatchConnection id
         public UserScore(User user, double score, UserProfile userProfile) {
+            this(user, score, userProfile, null);
+        }
+
+        // Overloaded constructor that also receives MatchConnection id
+        public UserScore(User user, double score, UserProfile userProfile, UUID connectionId) {
             this.userId = user.getId();
             this.name = user.getName();
-            this.profilePhoto = null; 
-            
+            this.profilePhoto = null;
+
             this.matchScore = Math.round(score * 100.0) / 100.0;
             this.percentage = (int) (this.matchScore * 100);
-            
+            this.connectionId = connectionId;
+
             // Use the passed userProfile object directly
             if (userProfile != null) {
                 this.age = userProfile.getAge() != null ? userProfile.getAge() : 0;
@@ -334,5 +362,5 @@ public UserProfile findUserProfileFromUserId(User user) {
             }
         }
     }
-    }
+}
 

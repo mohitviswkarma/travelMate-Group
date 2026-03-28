@@ -1,6 +1,7 @@
 package com.travelmate.controller.matching;
 
 import com.google.gson.Gson;
+import com.travelmate.dto.GroupMatchDto;
 import com.travelmate.service.matching.MatchingService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,6 +19,30 @@ public class MatchingController {
     public MatchingController(MatchingService matchingService, Gson gson) {
         this.matchingService = matchingService;
         this.gson = gson;
+    }
+
+    public void findMatchingGroups(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        try {
+            // We reuse the MatchRequestDto because the user enters the same info (Destination, dates, etc.)
+            MatchRequestDto requestDto = gson.fromJson(req.getReader(), MatchRequestDto.class);
+
+            if (requestDto.destination == null || requestDto.destination.isEmpty()) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Destination is required");
+                return;
+            }
+
+            // Call the SEPARATE service method
+            List<GroupMatchDto> groups = matchingService.findMatchingGroups(requestDto.destination);
+
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            resp.getWriter().write(gson.toJson(groups));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write(gson.toJson(new ErrorResponse(e.getMessage())));
+        }
     }
 
     public void findMatches(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -109,8 +134,8 @@ public class MatchingController {
     public void getIncomingRequests(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             UUID currentUserId = (UUID) req.getAttribute("userId");
-            List<MatchingService.IncomingRequestDto> requests = matchingService.getPendingRequests(currentUserId);
-            
+            List<MatchingService.UserScore> requests = matchingService.getIncomingMatchRequests(currentUserId);
+            System.out.println("Incoming Requests: " + requests);
             resp.setContentType("application/json");
             resp.getWriter().write(gson.toJson(requests));
         } catch (Exception e) {
@@ -125,13 +150,13 @@ public class MatchingController {
             UUID currentUserId = (UUID) req.getAttribute("userId");
             MatchResponseDto responseDto = gson.fromJson(req.getReader(), MatchResponseDto.class);
 
-            if (responseDto.requestId == null || responseDto.action == null) {
+            if (responseDto.MatchConnectionId == null || responseDto.action == null) {
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Request ID and Action are required");
                 return;
             }
 
             boolean isAccepted = "ACCEPT".equalsIgnoreCase(responseDto.action);
-            matchingService.respondToMatchRequest(currentUserId, UUID.fromString(responseDto.requestId), isAccepted);
+            matchingService.respondToMatchRequest(currentUserId, UUID.fromString(responseDto.MatchConnectionId), isAccepted);
 
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write(gson.toJson(new SuccessResponse("Request " + (isAccepted ? "accepted" : "rejected"))));
@@ -144,7 +169,7 @@ public class MatchingController {
 
     // DTO
     private static class MatchResponseDto {
-        String requestId; // This is the MatchConnection ID
+        String MatchConnectionId; // This is the MatchConnection ID
         String action;    // "ACCEPT" or "REJECT"
     }
 

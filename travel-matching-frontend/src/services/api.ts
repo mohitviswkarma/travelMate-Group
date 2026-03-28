@@ -95,6 +95,25 @@ class APIService {
     return this.handleResponse(response);
   }
 
+  async findGroups(searchData: any) {
+    const response = await fetch(`${API_BASE_URL}/matches/find-groups`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(searchData),
+    });
+    return this.handleResponse(response);
+  }
+
+  // ============ GROUP APIs ============
+  async sendGroupJoinRequest(groupId: string, message: string) {
+    const response = await fetch(`${API_BASE_URL}/group/join-request`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ groupId, message }),
+    });
+    return this.handleResponse(response);
+  }
+
   async sendMatchRequest(receiverId: string) {
     const response = await fetch(`${API_BASE_URL}/matches/send`, {
       method: "POST",

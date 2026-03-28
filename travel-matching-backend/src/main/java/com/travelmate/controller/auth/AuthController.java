@@ -87,18 +87,18 @@ public class AuthController {
             User user = authService.Login(data.email, data.password);
 
             // 🚫 Block login if email not verified
-            if (!user.isEmailVerified()) {
-                otpService.sendEmailOtp(user.getEmail());
+        //     if (!user.isEmailVerified()) {
+        //         otpService.sendEmailOtp(user.getEmail());
 
-                resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                resp.getWriter().write(gson.toJson(
-                        Map.of(
-                            "message", "Email not verified. OTP sent",
-                            "verificationRequired", true
-                        )
-                ));
-                return;
-            }
+        //         resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        //         resp.getWriter().write(gson.toJson(
+        //                 Map.of(
+        //                     "message", "Email not verified. OTP sent",
+        //                     "verificationRequired", true
+        //                 )
+        //         ));
+        //         return;
+        //     }
 
             String token =
                     JwtUtil.generateToken(user.getEmail(), user.getId());

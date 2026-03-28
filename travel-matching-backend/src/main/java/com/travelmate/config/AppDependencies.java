@@ -20,6 +20,8 @@ import com.travelmate.repository.user.UserRepository;
 import com.travelmate.repository.user.UserRepositoryImpl;
 import com.travelmate.repository.userProfile.UserProfileRepository;
 import com.travelmate.repository.userProfile.UserProfileRepositoryImpl;
+import com.travelmate.repository.group.GroupJoinRequestRepository;
+import com.travelmate.repository.group.GroupJoinRequestRepositoryImpl;
 import com.travelmate.repository.group.GroupRepository;
 import com.travelmate.repository.group.GroupRepositoryImpl;
 import com.travelmate.repository.matching.MatchConnectionRepository;
@@ -64,7 +66,7 @@ public class AppDependencies {
         MatchConnectionRepository matchConnectionRepository = new MatchConnectionRepositoryImpl(entityManager);
         otprepo otpRepository = new otprepo(entityManager);
         GroupRepository groupRepository = new GroupRepositoryImpl(entityManager);
-
+       
         /* =========================
            SERVICES
            ========================= */
@@ -74,12 +76,14 @@ public class AppDependencies {
 
         AuthService authService = new AuthService(userService, userProfileRepository);
 
+        GroupJoinRequestRepository groupJoinRequestRepository = new GroupJoinRequestRepositoryImpl(entityManager);
         MatchingService matchingService = new MatchingService(
-                tripRequestRepository, 
-                userProfileRepository, 
-                userRepository,
-                matchConnectionRepository // Added this
-            );
+            tripRequestRepository, 
+            userProfileRepository, 
+            userRepository,
+            matchConnectionRepository,
+            groupRepository // <--- ADD THIS ARGUMENT
+        );
         /* =========================
            JSON (ONE INSTANCE)
            ========================= */
@@ -89,7 +93,7 @@ public class AppDependencies {
         new otpService(otpRepository, new com.travelmate.service.email.EmailService());
 
 
-        GroupService groupService = new GroupService(groupRepository, userRepository);
+       GroupService groupService = new GroupService(groupRepository, userRepository, groupJoinRequestRepository);
 
         
 

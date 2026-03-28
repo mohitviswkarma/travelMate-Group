@@ -240,7 +240,7 @@ export default function HomePage() {
                   <p className="text-slate-400 font-medium mt-2">People who want to travel with you.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   {requestsError && (
                     <div className="col-span-full p-6 bg-red-50 border border-red-100 rounded-3xl text-red-600 text-sm font-bold flex items-center justify-between">
                       <span>{requestsError}</span>
@@ -252,32 +252,63 @@ export default function HomePage() {
                       <div key={i} className="h-44 rounded-[2.5rem] bg-slate-100 animate-pulse" />
                     ))
                   ) : matchRequests.length > 0 ? matchRequests.map((request) => (
-                    <Card key={request.requestId} className="rounded-[2.5rem] border-none bg-white shadow-xl shadow-slate-200/50 overflow-hidden hover:shadow-2xl transition-all duration-300">
+                    <Card key={request.userId} className="rounded-[2.5rem] border-none bg-white shadow-xl shadow-slate-200/50 overflow-hidden hover:shadow-2xl transition-all duration-300">
                       <CardContent className="p-6">
                         <div className="flex items-center gap-4">
                           <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-2xl shadow-md">
-                            {request.senderName?.[0] || "?"}
+                            {request.name?.[0] || "?"}
                           </div>
-                          <div className="flex-1">
-                            <h3 className="font-heading font-black text-slate-900">{request.senderName}</h3>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Sent at {new Date(request.sentAt).toLocaleDateString()}</p>
-                            <div className="flex items-center gap-2 mt-2 text-primary">
-                               <MessageSquare className="h-3 w-3" />
-                               <span className="text-[10px] font-black uppercase tracking-widest">Wants to connect</span>
+                          <div className="flex-1 space-y-2">
+                            <div>
+                              <h3 className="font-heading font-black text-slate-900">{request.name}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                {typeof request.percentage === "number" && (
+                                  <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase px-2 py-0.5">
+                                    {request.percentage}% Match
+                                  </Badge>
+                                )}
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                  <MessageSquare className="h-3 w-3" />
+                                  Wants to connect
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-xs text-slate-500 space-y-1">
+                              <p className="font-bold">
+                                {request.age ? `${request.age} Years` : "Age N/A"} • {request.gender || "Gender N/A"}
+                              </p>
+                              {request.bio && (
+                                <p className="text-[11px] italic line-clamp-2">
+                                  "{request.bio}"
+                                </p>
+                              )}
+                              {request.interests && request.interests.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {request.interests.map((interest: string) => (
+                                    <Badge
+                                      key={interest}
+                                      variant="secondary"
+                                      className="rounded-lg bg-slate-50 text-slate-600 border border-slate-100 font-bold uppercase text-[9px] px-2 py-1"
+                                    >
+                                      {interest}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-3 mt-6">
                           <Button 
-                            onClick={() => handleRespondRequest(request.requestId, "REJECT")}
+                            onClick={() => handleRespondRequest(request.userId, "REJECT")}
                             variant="ghost" 
                             className="rounded-2xl h-11 bg-slate-50 text-slate-400 hover:text-destructive hover:bg-destructive/5 font-black text-[10px] uppercase tracking-widest gap-2"
                           >
                             <X className="h-4 w-4" /> Reject
                           </Button>
                           <Button 
-                            onClick={() => handleRespondRequest(request.requestId, "ACCEPT")}
+                            onClick={() => handleRespondRequest(request.userId, "ACCEPT")}
                             className="rounded-2xl h-11 bg-primary text-white hover:bg-primary/90 font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 gap-2"
                           >
                             <Check className="h-4 w-4" /> Accept
@@ -404,15 +435,16 @@ export default function HomePage() {
 
                 <div className="mt-10">
                   <Button 
-                    onClick={() => navigate("/feed", { 
-                      state: { 
-                        destination, 
-                        startDate, 
-                        endDate, 
-                        minBudget: budget[0], 
-                        maxBudget: budget[1] 
-                      } 
-                    })}
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        destination,
+                        startDate,
+                        endDate,
+                        minBudget: String(budget[0]),
+                        maxBudget: String(budget[1]),
+                      })
+                      navigate(`/matches/users?${params.toString()}`)
+                    }}
                     disabled={!destination || !startDate || !endDate}
                     className="w-full h-16 rounded-3xl bg-primary text-white hover:bg-primary/90 font-heading font-black text-lg tracking-wide shadow-2xl shadow-primary/20 transition-all active:scale-[0.98] group flex justify-center items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                   >

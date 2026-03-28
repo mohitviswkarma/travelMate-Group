@@ -2,6 +2,10 @@ package com.travelmate.repository.group;
 
 import com.travelmate.entity.TravelGroup;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 public class GroupRepositoryImpl implements GroupRepository {
@@ -33,6 +37,30 @@ public class GroupRepositoryImpl implements GroupRepository {
     @Override
     public TravelGroup findById(UUID groupId) {
         return entityManager.find(TravelGroup.class, groupId);
+    }
+
+    @Override
+    public List<TravelGroup> findByDestination(String destination) {
+        if (destination == null || destination.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+
+            String jpql = "SELECT DISTINCT g FROM TravelGroup g " +
+            "LEFT JOIN FETCH g.members m " +
+            "LEFT JOIN FETCH m.userProfile " +  
+            "WHERE LOWER(g.destination) LIKE LOWER(:dest) " +
+            "AND g.startDate >= CURRENT_DATE " +
+            "AND SIZE(g.members) < g.maxSize";
+
+            TypedQuery<TravelGroup> query = entityManager.createQuery(jpql, TravelGroup.class);
+            query.setParameter("dest", "%" + destination + "%"); // Partial match wildcard
+
+            return query.getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Collections.emptyList(); // Return empty list instead of crashing
+        }
     }
 
     @Override
